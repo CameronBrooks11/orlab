@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="orlab",
-    version="0.2.2",  
+    version="0.2.3",  
     author="Cameron Brooks",
     author_email="cambrooks3393@gmail.com",
     description="OrLab is a Python module designed for interacting and scripting with OpenRocket, with enhanced capabilities for simulations and computational workflows.",
