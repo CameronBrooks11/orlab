@@ -16,8 +16,8 @@ class LandingPoints(list):
         with orlab.OpenRocketInstance() as instance:
 
             # Load the document and get simulation
-            orh = orlab.Helper(instance)
-            doc = orh.load_doc(os.path.join("examples", "simple.ork"))
+            orl = orlab.Helper(instance)
+            doc = orl.load_doc(os.path.join("examples", "simple.ork"))
             sim = doc.getSimulation(0)
 
             # Randomize various parameters
@@ -39,7 +39,7 @@ class LandingPoints(list):
                     "Nose cone",
                     "Body tube",
                 ):  # 5% in the mass of various components
-                    component = orh.get_component_named(rocket, component_name)
+                    component = orl.get_component_named(rocket, component_name)
                     mass = component.getMass()
                     component.setMassOverridden(True)
                     component.setOverrideMass(mass * gauss(1.0, 0.05))
@@ -48,7 +48,7 @@ class LandingPoints(list):
                     gauss(1000, 50)
                 )  # simulation listener to drop from 1000 m +- 50
                 lp = LandingPoint(self.ranges, self.bearings)
-                orh.run_simulation(sim, listeners=(airstarter, lp))
+                orl.run_simulation(sim, listeners=(airstarter, lp))
                 self.append(lp)
 
     def print_stats(self):

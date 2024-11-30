@@ -7,15 +7,15 @@ import orlab
 from orlab import FlightDataType, FlightEvent
 
 with orlab.OpenRocketInstance() as instance:
-    orh = orlab.Helper(instance)
+    orl = orlab.Helper(instance)
 
     # Load document, run simulation and get data and events
 
-    doc = orh.load_doc(os.path.join('examples', 'simple.ork'))
+    doc = orl.load_doc(os.path.join('examples', 'simple.ork'))
     sim = doc.getSimulation(0)
-    orh.run_simulation(sim)
-    data = orh.get_timeseries(sim, [FlightDataType.TYPE_TIME, FlightDataType.TYPE_ALTITUDE, FlightDataType.TYPE_VELOCITY_Z])
-    events = orh.get_events(sim)
+    orl.run_simulation(sim)
+    data = orl.get_timeseries(sim, [FlightDataType.TYPE_TIME, FlightDataType.TYPE_ALTITUDE, FlightDataType.TYPE_VELOCITY_Z])
+    events = orl.get_events(sim)
 
     # Make a custom plot of the simulation
 

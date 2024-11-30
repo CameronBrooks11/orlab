@@ -8,18 +8,18 @@ import orlab
 from orlab import FlightDataType
 
 with orlab.OpenRocketInstance() as instance:
-    orh = orlab.Helper(instance)
+    orl = orlab.Helper(instance)
 
     # Load document, run simulation and get data and events
-    doc = orh.load_doc(os.path.join('examples', 'simple.ork'))
+    doc = orl.load_doc(os.path.join('examples', 'simple.ork'))
     sim = doc.getSimulation(0)
 
 
     # Define some functions for simulating and optimizing
     def simulate_at_angle(ang, sim):
         sim.getOptions().setLaunchRodAngle(math.radians(ang))
-        orh.run_simulation(sim)
-        return orh.get_timeseries(sim, [FlightDataType.TYPE_ALTITUDE, FlightDataType.TYPE_POSITION_X])
+        orl.run_simulation(sim)
+        return orl.get_timeseries(sim, [FlightDataType.TYPE_ALTITUDE, FlightDataType.TYPE_POSITION_X])
 
 
     def to_min(ang, sim):

@@ -41,7 +41,7 @@ class Helper:
 
     def run_simulation(self, sim, listeners: List[AbstractSimulationListener] = None):
         """ This is a wrapper to the Simulation.simulate() for running a simulation
-            The optional listeners parameter is a sequence of objects which extend orh.AbstractSimulationListener.
+            The optional listeners parameter is a sequence of objects which extend orl.AbstractSimulationListener.
         """
 
         if listeners is None:
