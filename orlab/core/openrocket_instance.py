@@ -19,9 +19,10 @@ class OpenRocketInstance:
     """
 
     # Optionally define the path to the JVM manually
-    # MANUAL_JVM_PATH = None  
-    # MANUAL_JVM_PATH = r'C:\Program Files\Java\jdk-22\bin\server\jvm.dll'  
-    MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-21.0.5.11-hotspot\bin\server\jvm.dll'
+    MANUAL_JVM_PATH = None  
+    #MANUAL_JVM_PATH = r'C:\Program Files\Java\jdk-22\bin\server\jvm.dll'  
+    #MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-21.0.5.11-hotspot\bin\server\jvm.dll'
+    #MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot\bin\server\jvm.dll'
 
     def __init__(self, jar_path: str = CLASSPATH, log_level: Union[OrLogLevel, str] = OrLogLevel.ERROR):
         """ jar_path is the full path of the OpenRocket .jar file to use

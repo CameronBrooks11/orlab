@@ -142,3 +142,14 @@ class Helper:
             if component.getName() == name:
                 return component
         raise ValueError(root.toString() + " has no component named " + name)
+
+    def get_all_components(self, root) -> List[jpype.JObject]:
+        """ Returns a list of all rocket components in the loaded OpenRocket file.
+
+            :param root: The root RocketComponent (usually obtained from the simulation)
+            :return: List of all component objects
+        """
+        components = []
+        for component in JIterator(root):
+            components.append(component)
+        return components

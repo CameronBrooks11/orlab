@@ -21,7 +21,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
 
 - **OpenRocket** version **23.09**
   - [Download OpenRocket](https://github.com/openrocket/openrocket/releases/download/release-23.09/OpenRocket-23.09.jar)
-- **Adoptium JDK 21 LTS** or higher
+- **Adoptium JDK 17 LTS** (or higher?)
   - [Download Adoptium JDK](https://adoptium.net/)
   - Other JDK releases (i.e. 22) have been tested and work, but not thoroughly.
 - **Python** version **3.6** or higher
@@ -75,7 +75,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
 
 ### Linux
 
-1. **Install Adoptium JDK 21 LTS**
+1. **Install Adoptium JDK 17 LTS**
 
    Download and install the Adoptium JDK from the [official website](https://adoptium.net/). Check the option to set / override `JAVA_HOME`, unless you have a specific reason not to in which you will need to define `MANUAL_JVM_PATH` in your code.
 
@@ -85,7 +85,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
 
    - **Find Installation Directory:**
 
-     Locate where Adoptium JDK is installed, e.g., `/usr/lib/jvm/adoptium-21`.
+     Locate where Adoptium JDK is installed, e.g., `/usr/lib/jvm/adoptium-17`.
 
    - **Edit `~/.bashrc`:**
 
@@ -98,7 +98,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
    - **Add the Following Line:**
 
      ```
-     export JAVA_HOME="/usr/lib/jvm/adoptium-21"
+     export JAVA_HOME="/usr/lib/jvm/adoptium-17"
      ```
 
    - **Apply Changes:**
@@ -109,7 +109,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
 
 ### Windows
 
-1. **Install Adoptium JDK 21 LTS**
+1. **Install Adoptium JDK 17 LTS**
 
    Download and install the Adoptium JDK from the [official website](https://adoptium.net/).
 
@@ -123,7 +123,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
 
      - Click on `New` under **System variables**.
      - Set **Variable name** to `JAVA_HOME`.
-     - Set **Variable value** to the path where Adoptium JDK is installed, e.g., `C:\Program Files\Eclipse Adoptium\jdk-21`.
+     - Set **Variable value** to the path where Adoptium JDK is installed, e.g., `C:\Program Files\Eclipse Adoptium\jdk-17`.
 
    - **Update `PATH`:**
 
