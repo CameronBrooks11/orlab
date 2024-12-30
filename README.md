@@ -133,6 +133,8 @@ After installation and setup, you can start using **orlab** to interact with Ope
 
 For more detailed information and advanced usage, consult the [OpenRocket Wiki on Scripting with Python and JPype](https://github.com/openrocket/openrocket/wiki/Scripting-with-Python-and-JPype).
 
+_API docs are a work-in-progress, for now see the `examples` folder for usage._
+
 ## Development
 
 If you wish to contribute or modify **orlab**, follow these steps:
