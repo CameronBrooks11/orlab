@@ -30,14 +30,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
 
 ## Installation
 
-1. **Clone the Repository**
-
-   ```
-   git clone https://github.com/CameronBrooks11/orlab.git
-   cd orlab
-   ```
-
-2. **Install the Package**
+1. **Install the Package**
 
    Install **orlab** using `pip`:
 
@@ -45,11 +38,9 @@ Before installing **orlab**, ensure you have the following installed on your sys
    pip install orlab
    ```
 
-   _For development purposes, you can install in editable mode:_
+2. **Install Java JDK**
 
-   ```
-   pip install -e .
-   ```
+   See [Setting Up the JDK](#setting-up-the-jdk) for more details.
 
 3. **Download OpenRocket JAR**
 
