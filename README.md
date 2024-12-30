@@ -6,14 +6,16 @@ This project is an evolution of the original [orhelper](https://github.com/Silen
 
 ## Table of Contents
 
-- [Prerequisites](#prerequisites)
-- [Installation](#installation)
-- [Setting Up the JDK](#setting-up-the-jdk)
-  - [Linux](#linux)
-  - [Windows](#windows)
-- [Usage](#usage)
-- [Development](#development)
-- [Credits](#credits)
+- [orlab](#orlab)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+  - [Setting Up the JDK](#setting-up-the-jdk)
+    - [Linux](#linux)
+    - [Windows](#windows)
+  - [Usage](#usage)
+  - [Development](#development)
+  - [Credits](#credits)
 
 ## Prerequisites
 
@@ -40,10 +42,10 @@ Before installing **orlab**, ensure you have the following installed on your sys
    Install **orlab** using `pip`:
 
    ```
-   pip install .
+   pip install orlab
    ```
 
-   *For development purposes, you can install in editable mode:*
+   _For development purposes, you can install in editable mode:_
 
    ```
    pip install -e .
@@ -69,7 +71,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
    export CLASSPATH=/path/to/OpenRocket-23.09.jar
    ```
 
-   *Replace `/path/to/` with the actual directory path where the `.jar` file is located.*
+   _Replace `/path/to/` with the actual directory path where the `.jar` file is located._
 
 ## Setting Up the JDK
 
@@ -163,7 +165,7 @@ If you wish to contribute or modify **orlab**, follow these steps:
 
 4. **Run Tests**
 
-   *(Assuming tests are set up)*
+   _(Assuming tests are set up)_
 
    ```
    pytest
@@ -176,10 +178,10 @@ If you wish to contribute or modify **orlab**, follow these steps:
 ## Credits
 
 - The original [orhelper](https://github.com/SilentSys/orhelper) project by **SilentSys**
-   - **Richard Graham** for the original script: [Source](https://sourceforge.net/p/openrocket/mailman/openrocket-devel/thread/4F17AA0C.1040002@rdg.cc/)
-   - **@not7cd** for initial organization and cleanup: [Source](https://github.com/not7cd/orhelper)
+  - **Richard Graham** for the original script: [Source](https://sourceforge.net/p/openrocket/mailman/openrocket-devel/thread/4F17AA0C.1040002@rdg.cc/)
+  - **@not7cd** for initial organization and cleanup: [Source](https://github.com/not7cd/orhelper)
 - All contributors to the [OpenRocket](https://openrocket.info/) project over the years
 
 ---
 
-*Feel free to contribute, report issues, or suggest enhancements!*
+_Feel free to contribute, report issues, or suggest enhancements!_
