@@ -44,6 +44,30 @@ def test_jars_surface_stable():
         assert getattr(orlab.jars, name) is not None
 
 
+def test_parallel_surface_stable():
+    import orlab.parallel
+
+    assert sorted(orlab.parallel.__all__) == ["DECLARATIVE_KEYS", "DeclarativeKey"]
+    assert sorted(orlab.parallel.DECLARATIVE_KEYS) == [
+        "launch_altitude",
+        "launch_into_wind",
+        "launch_latitude",
+        "launch_longitude",
+        "launch_rod_angle",
+        "launch_rod_direction",
+        "launch_rod_length",
+        "wind_direction",
+        "wind_speed_average",
+    ]
+    # launch_into_wind must precede launch_rod_direction in declaration
+    # order: appliers that iterate the mapping get round-trip semantics
+    keys = list(orlab.parallel.DECLARATIVE_KEYS)
+    assert keys.index("launch_into_wind") < keys.index("launch_rod_direction")
+    for spec in orlab.parallel.DECLARATIVE_KEYS.values():
+        assert spec.setter.startswith("set") and spec.getter.startswith("get")
+        assert spec.kind in (float, bool)
+
+
 def test_enums_are_coherent():
     from orlab import FlightDataType, FlightEvent, OrLogLevel
 

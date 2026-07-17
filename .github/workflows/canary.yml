@@ -77,6 +77,18 @@ jobs:
           assert calm["landing_distance"] < 5, calm
           print("CANARY summary OK: apogee", calm["apogee"])
           EOF
+          uv run python tests/integration/cases/declarative_keys.py "OpenRocket-$VERSION.jar" | tee decl.out
+          grep '^RESULT ' decl.out | sed 's/^RESULT //' > decl.json
+          python3 - <<'EOF'
+          import json
+
+          result = json.load(open("decl.json"))
+          for key, applied in result["applied"].items():
+              got = result["readback"][key]
+              assert abs(got - applied) < 1e-9 if isinstance(applied, float) else got == applied, (key, applied, got)
+          assert result["readback"]["random_seed"] == 123456789, result
+          print("CANARY declarative OK")
+          EOF
 
   file-issue:
     runs-on: ubuntu-latest

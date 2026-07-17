@@ -93,6 +93,20 @@ def verify_manifest(instance, startup):
         lambda c: _has_method(c, "randomizeSeed"),
         "SimulationOptions.randomizeSeed",
     )
+    # the declarative contract: every whitelisted setter/getter pair plus
+    # the seed accessors (orlab.parallel.DECLARATIVE_KEYS)
+    from orlab.parallel import DECLARATIVE_KEYS
+
+    options_members = ["setRandomSeed", "getRandomSeed"]
+    for spec in DECLARATIVE_KEYS.values():
+        options_members.extend([spec.setter, spec.getter])
+    for member in options_members:
+        require_class(
+            core,
+            "simulation.SimulationOptions",
+            lambda c, m=member: _has_method(c, m),
+            f"SimulationOptions.{member}",
+        )
     for listener in (
         "SimulationListener",
         "SimulationEventListener",
