@@ -4,10 +4,8 @@ __all__ = ["JIterator"]
 class JIterator:
     """Wraps a Java iterable as a Python iterator.
 
-    Built for walking a rocket's component tree::
-
-        for component in JIterator(rocket):
-            print(component.getName())
+    Built for walking a rocket's component tree:
+    ``for component in JIterator(rocket): print(component.getName())``
 
     :param jit: any Java object exposing ``iterator(boolean)`` — in practice a
         ``RocketComponent`` (the boolean requests iteration over the full

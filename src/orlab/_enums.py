@@ -13,6 +13,8 @@ __all__ = [
 
 
 class OrLogLevel(Enum):
+    """OpenRocket's logback log levels, for OpenRocketInstance(log_level=...)."""
+
     OFF = auto()
     ERROR = auto()
     WARN = auto()
@@ -23,6 +25,11 @@ class OrLogLevel(Enum):
 
 
 class FlightDataType(Enum):
+    """Flight-data series selectable in Helper.get_timeseries /
+    get_final_values — the union across all supported OpenRocket versions.
+    Requesting one the loaded version lacks raises
+    UnsupportedFlightDataType naming the versions that have it."""
+
     TYPE_ACCELERATION_TOTAL = auto()
     TYPE_ACCELERATION_XY = auto()
     TYPE_ACCELERATION_Z = auto()
@@ -86,6 +93,10 @@ class FlightDataType(Enum):
 
 
 class FlightEvent(Enum):
+    """Flight events returned by Helper.get_events — the union across
+    all supported OpenRocket versions (SIM_WARN/SIM_ABORT are 24.12+).
+    Unknown event types from newer jars are skipped with a warning."""
+
     ALTITUDE = auto()
     APOGEE = auto()
     BURNOUT = auto()

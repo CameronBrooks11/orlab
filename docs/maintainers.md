@@ -38,7 +38,8 @@ issue on failure).
 
 ## Test tiers
 
-- `just test` — unit suite, jar-free, sub-second; runs in every CI job.
+- `just test` — unit suite, jar-free, sub-second; runs on every push and PR
+  (CI test matrix) and gates every release build.
 - `just test-integration` — real simulations against every supported jar
   (sha256-pinned, cached in `~/.cache/orlab-jars` or `$ORLAB_JAR_CACHE`);
   `ORLAB_TEST_VERSION=24.12` limits to one version, as the CI matrix does.

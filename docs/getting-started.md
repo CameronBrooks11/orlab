@@ -72,6 +72,7 @@ Python/numpy types.
   `orl.get_timeseries(sim, ["TYPE_SOME_NEW_TYPE"])`.
 - **Listeners**: subclass `orlab.AbstractSimulationListener` and pass
   instances via `run_simulation(sim, listeners=[...])`. OpenRocket clones
-  listeners internally — collect results through shared mutable state (a
-  list you keep a reference to), not instance attributes. Exceptions raised
-  in a listener propagate out of `run_simulation` intact.
+  listeners (shallow-copy) before the run — mutate shared state (append to a
+  list you keep a reference to) rather than rebinding attributes on `self`
+  and reading them back afterwards. Exceptions raised in a listener
+  propagate out of `run_simulation` intact.

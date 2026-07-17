@@ -26,6 +26,8 @@ __all__ = [
 
 
 class OrLogLevel(Enum):
+    """OpenRocket's logback log levels, for OpenRocketInstance(log_level=...)."""
+
     OFF = auto()
     ERROR = auto()
     WARN = auto()
@@ -43,8 +45,19 @@ def render_enums():
 
     body = HEADER
     body += "\n\nclass FlightDataType(Enum):\n"
+    body += (
+        '    """Flight-data series selectable in Helper.get_timeseries /\n'
+        "    get_final_values — the union across all supported OpenRocket versions.\n"
+        "    Requesting one the loaded version lacks raises\n"
+        '    UnsupportedFlightDataType naming the versions that have it."""\n\n'
+    )
     body += "".join(f"    {n} = auto()\n" for n in data_types)
     body += "\n\nclass FlightEvent(Enum):\n"
+    body += (
+        '    """Flight events returned by Helper.get_events — the union across\n'
+        "    all supported OpenRocket versions (SIM_WARN/SIM_ABORT are 24.12+).\n"
+        '    Unknown event types from newer jars are skipped with a warning."""\n\n'
+    )
     body += "".join(f"    {n} = auto()\n" for n in events)
     return body
 

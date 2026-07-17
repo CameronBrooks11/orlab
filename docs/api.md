@@ -24,14 +24,20 @@ exception types in `orlab.errors`. Everything else is internal.
 ::: orlab.FlightDataType
     options:
       members: false
+      show_root_heading: true
+      heading_level: 3
 
 ::: orlab.FlightEvent
     options:
       members: false
+      show_root_heading: true
+      heading_level: 3
 
 ::: orlab.OrLogLevel
     options:
       members: false
+      show_root_heading: true
+      heading_level: 3
 
 `FlightDataType` and `FlightEvent` are generated as the union of constants
 across all supported OpenRocket versions; availability on the loaded version
