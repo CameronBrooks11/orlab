@@ -139,12 +139,13 @@ class Helper:
         branch = simulation.getSimulatedData().getBranch(0)
 
         output: dict[FlightEvent, list[float]] = {}
-        unknown: set = set()
+        unknown: set[str] = set()
         for ev in branch.getEvents():
+            java_type = ev.getType()
             try:
-                event = self.translate_flight_event(ev.getType())
+                event = self.translate_flight_event(java_type)
             except ValueError:
-                name = str(ev.getType().name())
+                name = str(java_type.name())
                 if name not in unknown:
                     unknown.add(name)
                     logger.warning("Skipping unknown flight event type %s", name)
