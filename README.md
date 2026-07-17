@@ -60,23 +60,26 @@ e.g. `orl.get_timeseries(sim, ["TYPE_SOME_NEW_TYPE"])`.
    tested). Let the installer set `JAVA_HOME` — JPype finds the JVM through
    it. See [Setting up the JDK](#setting-up-the-jdk) if it doesn't.
 
-3. **Download an OpenRocket jar** —
-   [OpenRocket-24.12.jar](https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar),
-   or:
+3. **Fetch an OpenRocket jar** — orlab downloads it into a local cache and
+   verifies its sha256:
 
    ```
-   wget https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar
+   python -m orlab fetch
    ```
 
-4. **Point orlab at the jar** — pass `jar_path=` to `OpenRocketInstance(...)`,
-   or set an environment variable:
+   After that, `OpenRocketInstance()` finds the cached jar with no further
+   configuration. To use a jar you already have instead, pass `jar_path=`
+   to `OpenRocketInstance(...)` or set `ORLAB_JAR`:
 
    ```
    export ORLAB_JAR=/path/to/OpenRocket-24.12.jar
    ```
 
-   The legacy `CLASSPATH` variable also still works. Without either, orlab
-   looks for `./OpenRocket-23.09.jar` in the current directory.
+   The full resolution order is `ORLAB_JAR`, the legacy `CLASSPATH`, the
+   newest supported `OpenRocket-*.jar` in the current directory, then the
+   cache; `python -m orlab which` shows what would be used. See
+   [Getting an OpenRocket jar](https://cameronbrooks11.github.io/orlab/guides/jars/)
+   for details.
 
 ## Usage
 

@@ -82,9 +82,9 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/orlab-jars
-          # conftest hash: a changed sha256 pin must not restore the stale jar
+          # pin-file hash: a changed sha256 pin must not restore the stale jar
           # (cache entries are immutable per key)
-          key: orlab-jars-${{ matrix.or-version }}-${{ hashFiles('tests/integration/conftest.py') }}
+          key: orlab-jars-${{ matrix.or-version }}-${{ hashFiles('src/orlab/_pins.py') }}
 
       - name: Run integration matrix
         run: |

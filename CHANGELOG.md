@@ -9,6 +9,19 @@ reconstructed from the git log.
 
 ### Added
 
+- Jar management: `orlab.fetch_jar(version)` downloads an OpenRocket release
+  jar into a local cache (`ORLAB_JAR_CACHE`, default `~/.cache/orlab-jars`)
+  and verifies its sha256 against pins shipped with orlab. Unpinned versions
+  require an explicit `sha256=`; there is no way to skip verification
+  (`orlab.errors.JarVerificationError`). A `python -m orlab` CLI wraps it:
+  `fetch [version] [--sha256 HEX]` (stable, scriptable stdout: the jar path)
+  and `which` (shows the jar the default resolution would use, and why).
+- Default jar resolution now ends at the fetch cache: `ORLAB_JAR` →
+  `CLASSPATH` → newest supported `OpenRocket-*.jar` in the current
+  directory → newest verified jar in the cache. `OpenRocketInstance()`
+  works with zero configuration after one `python -m orlab fetch`.
+  `OpenRocketInstance` itself never downloads anything.
+- Docs: "Getting an OpenRocket jar" guide page.
 - Guides on the docs site: simulation listeners (hooks, the clone/shared-state
   contract), monte-carlo studies (the one-instance-many-sims pattern, seeds),
   and working across OpenRocket versions (profiles, fallback, the
@@ -21,6 +34,14 @@ reconstructed from the git log.
 
 ### Changed
 
+- The current-directory jar fallback picks the newest jar with an exact
+  version profile instead of the hardcoded `./OpenRocket-23.09.jar`, and
+  skips unprofiled or unparseable jar names (a `26.xx-SNAPSHOT` build in
+  the cwd no longer shadows — nor is shadowed by — a supported release;
+  pass such jars explicitly). With several `OpenRocket-*.jar` files in the
+  cwd, the newest supported one now wins.
+- The integration suite downloads its matrix jars through `orlab.fetch_jar`
+  itself instead of a private copy of the download/verify logic.
 - README rewritten: version-support matrix (all four OpenRocket versions
   CI-tested), working quickstart, lifecycle/seed/JVM-options notes, trimmed
   JDK setup, uv/just development workflow.
