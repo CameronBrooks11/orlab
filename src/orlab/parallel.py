@@ -521,8 +521,7 @@ class SimulationPool:
                 futures[executor.submit(_worker_run, index, task, seeds[index], worker_fn)] = index
             if progress is not None:
                 progress(0, total)
-            done = 0
-            for future in as_completed(futures):
+            for done, future in enumerate(as_completed(futures), start=1):
                 outcome = future.result()
                 kind = outcome[0]
                 if kind == "init_error":
@@ -552,7 +551,6 @@ class SimulationPool:
                             partial(),
                             f"task {index} failed ({error_type}: {message}) and on_error='abort'",
                         )
-                done += 1
                 if progress is not None:
                     try:
                         progress(done, total)

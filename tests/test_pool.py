@@ -6,12 +6,12 @@ import sys
 import zipfile
 from types import SimpleNamespace
 
+import _pool_stubs
 import pytest
 
 import orlab.parallel as parallel
 from orlab import SimulationPool
 from orlab.errors import OrlabError, StudyAborted
-import _pool_stubs
 
 
 @pytest.fixture
