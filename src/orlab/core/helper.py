@@ -5,6 +5,8 @@ import jpype
 import numpy as np
 
 from .._enums import FlightDataType, FlightEvent
+from ..errors import UnsupportedFlightDataType
+from ..profiles import versions_with
 from .jiterator import JIterator
 from .openrocket_instance import OpenRocketInstance
 from .simulation_listener import AbstractSimulationListener
@@ -25,6 +27,7 @@ class Helper:
         if not open_rocket_instance.started:
             raise Exception("OpenRocketInstance not yet started")
 
+        self._instance = open_rocket_instance
         self.openrocket = open_rocket_instance.openrocket
 
     def load_doc(self, or_filename):
@@ -71,6 +74,10 @@ class Helper:
         sim.simulate(listener_array)
 
     def translate_flight_data_type(self, flight_data_type: FlightDataType | str):
+        """Translates a FlightDataType (or constant name) to the Java constant.
+        Raises UnsupportedFlightDataType when the loaded OpenRocket version
+        does not expose it (constants differ across versions).
+        """
         if isinstance(flight_data_type, FlightDataType):
             name = flight_data_type.name
         elif isinstance(flight_data_type, str):
@@ -78,7 +85,15 @@ class Helper:
         else:
             raise TypeError("Invalid type for flight_data_type")
 
-        return getattr(self.openrocket.simulation.FlightDataType, name)
+        java_type = getattr(self.openrocket.simulation.FlightDataType, name, None)
+        if java_type is None:
+            loaded = self._instance.or_version
+            available = versions_with(name)
+            detail = f"available in: {', '.join(available)}" if available else "unknown constant"
+            raise UnsupportedFlightDataType(
+                f"{name} is not available in OpenRocket {loaded} ({detail})"
+            )
+        return java_type
 
     def get_timeseries(
         self, simulation, variables: Iterable[FlightDataType | str], branch_number=0

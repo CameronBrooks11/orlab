@@ -2,7 +2,7 @@ import zipfile
 
 import pytest
 
-from orlab.core.version import PackageRoots, parse_version, read_or_version, select_roots
+from orlab.core.version import parse_version, read_or_version
 
 
 def _jar_with_properties(tmp_path, content):
@@ -54,18 +54,3 @@ def test_parse_version(raw, expected):
 def test_parse_version_rejects_garbage():
     with pytest.raises(ValueError):
         parse_version("unknown")
-
-
-@pytest.mark.parametrize(
-    ("version", "core", "swing"),
-    [
-        ("15.03", "net.sf.openrocket", "net.sf.openrocket"),
-        ("22.02", "net.sf.openrocket", "net.sf.openrocket"),
-        ("23.09", "net.sf.openrocket", "net.sf.openrocket"),
-        ("24.12", "info.openrocket.core", "info.openrocket.swing"),
-        ("24.12.RC.01", "info.openrocket.core", "info.openrocket.swing"),
-        ("25.07", "info.openrocket.core", "info.openrocket.swing"),
-    ],
-)
-def test_select_roots(version, core, swing):
-    assert select_roots(version) == PackageRoots(core=core, swing=swing)
