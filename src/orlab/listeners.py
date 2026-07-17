@@ -46,18 +46,32 @@ class WindProfile(AbstractSimulationListener):
             raise ValueError("altitudes_m, speeds_ms, directions_rad lengths differ")
         if len(altitudes) == 0:
             raise ValueError("at least one profile point is required")
+        if not (
+            np.all(np.isfinite(altitudes))
+            and np.all(np.isfinite(speeds))
+            and np.all(np.isfinite(directions))
+        ):
+            raise ValueError("profile values must be finite")
         if np.any(np.diff(altitudes) <= 0):
             raise ValueError("altitudes_m must be strictly increasing")
         if np.any(speeds < 0):
             raise ValueError("wind speeds cannot be negative")
         self.altitudes = altitudes
-        # the wind VECTOR components; meteorological "from" convention
+        # OpenRocket's from-vector convention (see _wind_at)
         self.u = speeds * np.sin(directions)
         self.v = speeds * np.cos(directions)
 
     def _wind_at(self, altitude_m: float) -> tuple[float, float]:
-        """The interpolated wind vector (u east-component, v north) at an
-        altitude — pure numpy, unit-testable without a JVM."""
+        """The interpolated (u, v) Coordinate components at an altitude —
+        pure numpy, unit-testable without a JVM.
+
+        Convention note for extenders: OpenRocket's wind Coordinate points
+        toward where the wind blows *from* (the stepper ADDS it to rocket
+        velocity to form airspeed) — u, v here are from-vector components,
+        the sign-inverse of physical airflow components. Wind from the east
+        is (+speed, 0), and the rocket drifts west. This reproduces
+        OpenRocket's own model exactly; weather-data u/v (eastward/northward
+        FLOW) must be negated before use in a custom hook."""
         u = float(np.interp(altitude_m, self.altitudes, self.u))
         v = float(np.interp(altitude_m, self.altitudes, self.v))
         return u, v
@@ -75,8 +89,8 @@ class ThrustFactor(AbstractSimulationListener):
 
     def __init__(self, factor: float):
         factor = float(factor)
-        if not factor > 0 or math.isnan(factor):
-            raise ValueError(f"thrust factor must be positive, got {factor}")
+        if not math.isfinite(factor) or factor <= 0:
+            raise ValueError(f"thrust factor must be positive and finite, got {factor}")
         self.factor = factor
 
     def postSimpleThrustCalculation(self, status, thrust):

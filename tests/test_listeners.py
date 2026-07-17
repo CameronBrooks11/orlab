@@ -90,7 +90,11 @@ def test_listeners_pickle_copy_and_spawn_round_trip():
     queue = ctx.Queue()
     child = ctx.Process(target=_child_check, args=(pickle.dumps(profile), queue))
     child.start()
-    jvm_started, type_name, v_at_5 = queue.get(timeout=60)
+    try:
+        jvm_started, type_name, v_at_5 = queue.get(timeout=60)
+    except Exception:
+        child.join(timeout=5)
+        pytest.fail(f"spawn child produced nothing (exitcode={child.exitcode})")
     child.join(timeout=60)
     assert jvm_started is False  # the child never had a JVM
     assert type_name == "WindProfile"

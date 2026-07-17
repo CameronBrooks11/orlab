@@ -132,6 +132,7 @@ model = opts.getMultiLevelWindModel()
 model.clearLevels()
 model.addWindLevel(0.0, 5.0, 0.0, 0.05)      # altitude, speed, direction, std dev
 model.addWindLevel(100.0, 12.0, 0.3, 0.1)
+# model.importLevelsFromCSV(java.io.File) reads a whole sounding at once
 ```
 
 This is the stochastic, version-gated alternative to `WindProfile`
@@ -152,3 +153,6 @@ mixing the two mechanisms as undefined and drive one of them.
 - Python listeners add per-step overhead (roughly 4× on very fast
   simple-rocket sims); for big stochastic studies on 24.12 the native
   multi-level model is the fast path.
+- orlab's jar-running integration CI is Linux-only; the unit suite (and
+  everything above that doesn't touch a JVM) is also exercised on
+  Windows.

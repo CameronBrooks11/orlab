@@ -713,6 +713,13 @@ class Helper:
                     f"OpenRocket {self._instance.or_version}"
                 )
             component_type = java_class
+        elif not isinstance(component_type, jpype.JClass):
+            # a Python class would silently match nothing; a component
+            # instance would crash isinstance — refuse both clearly
+            raise TypeError(
+                "component_type must be a class-name string or a JClass, "
+                f"got {type(component_type).__name__}"
+            )
         return [c for c in JIterator(root) if isinstance(c, component_type)]
 
     def get_component_named(self, root, name):

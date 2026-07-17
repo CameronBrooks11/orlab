@@ -198,6 +198,18 @@ def verify_manifest(instance, startup):
             lambda c: _has_method(c, "setWindModelType"),
             "SimulationOptions.setWindModelType",
         )
+        require_class(
+            core,
+            "simulation.SimulationOptions",
+            lambda c: _has_method(c, "getMultiLevelWindModel"),
+            "SimulationOptions.getMultiLevelWindModel",
+        )
+        require_class(
+            core,
+            "models.wind.MultiLevelPinkNoiseWindModel",
+            lambda c: _has_method(c, "addWindLevel") and _has_method(c, "clearLevels"),
+            "MultiLevelPinkNoiseWindModel.addWindLevel/clearLevels",
+        )
     if modern_motors:
         require_class(
             core,
