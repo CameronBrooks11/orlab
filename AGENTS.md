@@ -28,9 +28,16 @@ Run `just check && just test` before every commit.
   versions (tests, the profile generator) must use subprocesses. See issue #9.
 - **OpenRocket's internal API moves between releases.** 24.12 renamed
   `net.sf.openrocket` to `info.openrocket.core`/`info.openrocket.swing`.
-  Never hardcode a package root: `orlab/core/version.py` detects the jar
-  version (from its `build.properties`, without starting the JVM) and selects
-  roots. The multi-version architecture is tracked in epic #3.
+  Never hardcode a package root or enum surface: `orlab/core/version.py`
+  detects the jar version (from its `build.properties`, without starting the
+  JVM) and `orlab/profiles/` carries the per-version facts (roots, startup
+  path, constants). Unknown newer versions fall back to the nearest older
+  profile with a warning.
+- **Profiles and `_enums.py` are generated — never hand-edit them.** For a new
+  OpenRocket release: `uv run python tools/generate_profile.py <jar>` (fails
+  loudly if the jar breaks orlab's contract manifest), then
+  `uv run python tools/generate_enums.py`, register the new module in
+  `orlab/profiles/__init__.py`, and ship it all as one PR.
 - **The public API surface is frozen by test** (`tests/test_api_surface.py`).
   Additions are fine; renames/removals are breaking changes.
 

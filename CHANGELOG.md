@@ -7,6 +7,28 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Added
+
+- Version profiles: per-OpenRocket-version facts (package roots, startup path,
+  `FlightDataType`/`FlightEvent` constants) generated from the jars by
+  `tools/generate_profile.py` and checked in for 15.03, 22.02, 23.09 and
+  24.12. Unknown newer versions fall back to the nearest older profile with a
+  warning, and a startup drift alarm warns when the loaded jar's constants
+  differ from its profile.
+- OpenRocket 24.12+ starts fully headless via the official
+  `OpenRocketCore.initialize()` bootstrap — no window disposal, no display
+  needed, and no private-field reflection on that path.
+- `orlab.errors` with `OrlabError`, `UnsupportedFlightDataType` and
+  `UnsupportedOpenRocketVersion`.
+
+### Changed
+
+- `FlightDataType`/`FlightEvent` are now generated as the union of constants
+  across all profiled versions (four 24.12-only data types added); requesting
+  a constant the loaded OpenRocket version does not expose raises
+  `UnsupportedFlightDataType` naming the versions that have it.
+- Snapshot version strings (`26.xx-SNAPSHOT`) parse instead of erroring.
+
 ## [0.3.1] — 2026-07-16
 
 ### Added

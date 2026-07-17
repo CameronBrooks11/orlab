@@ -28,18 +28,16 @@ def read_or_version(jar_path: str) -> str:
 
 def parse_version(version: str) -> tuple[int, int]:
     """Parses the leading numeric components of an OpenRocket version string.
-    '23.09' -> (23, 9); '24.12.RC.01' -> (24, 12).
+    '23.09' -> (23, 9); '24.12.RC.01' -> (24, 12). Snapshot builds use a
+    placeholder minor and either separator ('26.xx-SNAPSHOT', '25.xx.SNAPSHOT');
+    the placeholder parses as 0 so the major still selects roots and profiles.
     """
-    parts = version.split(".")
-    numbers = []
-    for part in parts[:2]:
-        digits = "".join(ch for ch in part if ch.isdigit())
-        if not digits:
-            break
-        numbers.append(int(digits))
-    if len(numbers) < 2:
+    parts = version.replace("-", ".").split(".")
+    major_digits = "".join(ch for ch in parts[0] if ch.isdigit())
+    if not major_digits:
         raise ValueError(f"Unrecognized OpenRocket version string: {version!r}")
-    return numbers[0], numbers[1]
+    minor_digits = "".join(ch for ch in parts[1] if ch.isdigit()) if len(parts) > 1 else ""
+    return int(major_digits), int(minor_digits) if minor_digits else 0
 
 
 def select_roots(version: str) -> PackageRoots:
