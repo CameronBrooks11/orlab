@@ -70,6 +70,17 @@ def test_listener_exception_propagates(jar):
     assert "boom from python listener" in result["message"]
 
 
+def test_second_instance_reuses_jvm(jar):
+    """Sequential with-blocks in one process work (the JVM is kept alive and
+    reused); a different jar path in the same process is refused clearly."""
+    _, path = jar
+    result = run_case("reuse.py", path)
+    assert result["first_apogee"] > 10
+    assert result["second_apogee"] > 10
+    assert result["conflict"] is not None
+    assert "already running" in result["conflict"]
+
+
 def test_cross_version_apogee_tolerance(all_jars):
     """Same rocket, zero wind: apogee must agree across every version within a
     band. Profiles catch name drift; only result comparison catches semantic

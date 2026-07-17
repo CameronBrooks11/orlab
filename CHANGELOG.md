@@ -9,6 +9,15 @@ reconstructed from the git log.
 
 ### Changed
 
+- The JVM now outlives the `with OpenRocketInstance(...)` block (JPype cannot
+  restart a JVM, so shutting it down made any second instance in the same
+  process fail with a confusing JPype error). Sequential blocks and notebook
+  re-runs on the same jar reuse the running OpenRocket; a different jar path
+  raises `OrlabError` explaining the one-jar-per-process constraint, and a
+  startup failure after JVM launch raises `OrlabError` instead of poisoning
+  retries silently. Helpers and listeners stay usable after the block; the
+  JVM ends with the interpreter.
+
 - `import orlab` no longer configures the root logger; consumers that relied
   on orlab's implicit `logging.basicConfig` must configure logging themselves
   (orlab's own INFO messages are otherwise hidden by Python's defaults).

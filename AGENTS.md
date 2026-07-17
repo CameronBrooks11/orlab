@@ -25,9 +25,11 @@ Run `just check && just test` before every commit.
 
 ## Hard constraints (learn these before touching core)
 
-- **One JVM per process** (JPype cannot restart a JVM). A process gets exactly
-  one `OpenRocketInstance` lifecycle; anything that needs two OpenRocket
-  versions (tests, the profile generator) must use subprocesses. See issue #9.
+- **One JVM per process** (JPype cannot restart a JVM). The JVM starts on the
+  first `OpenRocketInstance` and stays up until the interpreter exits; later
+  instances on the same jar reuse it, a different jar raises `OrlabError`.
+  Anything that needs two OpenRocket versions (tests, the profile generator)
+  must use subprocesses.
 - **OpenRocket's internal API moves between releases.** 24.12 renamed
   `net.sf.openrocket` to `info.openrocket.core`/`info.openrocket.swing`.
   Never hardcode a package root or enum surface: `orlab/core/version.py`
