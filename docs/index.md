@@ -2,8 +2,9 @@
 
 **orlab** scripts [OpenRocket](https://openrocket.info/) from Python via
 [JPype](https://jpype.readthedocs.io/): load `.ork` files, run simulations
-(optionally with custom listeners), and extract time series, final values,
-and flight events as Python/numpy data.
+(optionally with custom listeners), and extract time series, flight
+summaries, and events as Python/numpy data — up to parallel dispersion
+studies with one verified jar fetch and a worker pool.
 
 ```python
 import orlab
@@ -40,8 +41,12 @@ newest upstream release.
 
 - [Getting started](getting-started.md) — install, first simulation, the
   things worth knowing before a big run
-- Guides — [simulation listeners](guides/listeners.md),
-  [monte-carlo studies](guides/monte-carlo.md), and
+- Guides — [getting an OpenRocket jar](guides/jars.md),
+  [simulation listeners](guides/listeners.md),
+  [flight summaries](guides/summaries.md),
+  [monte-carlo studies](guides/monte-carlo.md) (including the parallel
+  `SimulationPool`), [simulation setup](guides/simulation-setup.md)
+  (motor swapping, layered wind), and
   [working across OpenRocket versions](guides/multi-version.md)
 - [API reference](api.md) — the full public surface, generated from the
   docstrings

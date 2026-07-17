@@ -21,6 +21,21 @@ with orlab.OpenRocketInstance(jar_path="OpenRocket-24.12.jar") as instance:
 ```
 
 The project is an evolution of [orhelper](https://github.com/SilentSys/orhelper).
+Beyond the basics, orlab ships the plumbing dispersion studies otherwise
+hand-roll:
+
+- `python -m orlab fetch` — sha256-verified jar download and cache;
+  `OpenRocketInstance()` then boots with zero configuration.
+- `orl.get_summary(sim)` — the scalar flight report (apogee, stability,
+  descent, landing distance/bearing, …) as plain Python;
+  `orl.export_csv` / `orl.get_dataframe` for full timeseries tables.
+- `orlab.SimulationPool` — parallel monte-carlo across JVM worker
+  processes, with replayable seeds and progress reporting.
+- `orl.set_motor(sim, "C6", manufacturer="Estes")` — swap the motor the
+  simulation actually flies, from the motor database or a `.eng` file.
+
+The [guides](https://cameronbrooks11.github.io/orlab/) cover each.
+
 Where orhelper targets a single OpenRocket version, orlab detects the jar's
 version before the JVM starts and adapts to it — package roots, startup path,
 and available flight-data constants all come from checked-in, generated
