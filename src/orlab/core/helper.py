@@ -121,8 +121,8 @@ class Helper:
 
         :param simulation: An openrocket simulation object.
         :param variables: A sequence of FlightDataType or strings representing the desired variables
-        :param branch_number:
-        :return:
+        :param branch_number: Stage branch to read (0 = sustainer).
+        :return: Dict keyed by the requested variables; values are numpy arrays.
         """
 
         branch = simulation.getSimulatedData().getBranch(branch_number)
@@ -140,8 +140,8 @@ class Helper:
 
         :param simulation: An openrocket simulation object.
         :param variables: A sequence of FlightDataType or strings representing the desired variables
-        :param branch_number:
-        :return:
+        :param branch_number: Stage branch to read (0 = sustainer).
+        :return: Dict keyed by the requested variables; values are the final samples.
         """
 
         branch = simulation.getSimulatedData().getBranch(branch_number)

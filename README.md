@@ -26,6 +26,9 @@ version before the JVM starts and adapts to it — package roots, startup path,
 and available flight-data constants all come from checked-in, generated
 version profiles.
 
+**Documentation: <https://cameronbrooks11.github.io/orlab/>** — getting
+started, API reference, and maintainer procedures.
+
 ## Supported OpenRocket versions
 
 | OpenRocket | Status | Notes |
