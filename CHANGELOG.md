@@ -7,6 +7,21 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Added
+
+- `orlab.parallel.DECLARATIVE_KEYS`: the curated set of `SimulationOptions`
+  knobs verified to apply-and-read-back identically on every supported
+  OpenRocket version — launch rod length/angle/direction, launch-into-wind,
+  launch altitude/latitude/longitude, wind speed average and direction —
+  each mapped to its setter/getter with value type and unit. Notable
+  verified interaction: OpenRocket launches into the wind by default, and
+  `launch_rod_direction` only takes effect together with
+  `launch_into_wind: False`; the mapping's declaration order encodes that.
+  The profile contract manifest checks every pair (plus
+  `setRandomSeed`/`getRandomSeed`) on regeneration, an integration case
+  round-trips them all on every matrix version, and the monthly canary
+  runs the same case against the newest upstream release.
+
 ## [0.7.0] — 2026-07-17
 
 ### Added

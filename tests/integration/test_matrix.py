@@ -252,3 +252,15 @@ def test_cross_version_apogee_tolerance(all_jars):
         assert abs(apogee - reference) / reference < 0.05, (
             f"apogee on {version} deviates >5% from 24.12: {apogees}"
         )
+
+
+def test_declarative_keys_round_trip(jar):
+    """Every DECLARATIVE_KEYS entry applies and reads back exactly on every
+    matrix version (including launch_rod_direction, which only round-trips
+    because launch_into_wind is applied first), and the options fly."""
+    _, path = jar
+    result = run_case("declarative_keys.py", path)
+    for key, applied in result["applied"].items():
+        assert result["readback"][key] == pytest.approx(applied), key
+    assert result["readback"]["random_seed"] == 123456789
+    assert result["apogee"] > 10
