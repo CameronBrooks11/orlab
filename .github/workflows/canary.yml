@@ -37,7 +37,7 @@ jobs:
           TAG=$(gh api repos/openrocket/openrocket/releases/latest --jq .tag_name)
           VERSION=${TAG#release-}
           echo "Newest OpenRocket release: $VERSION"
-          curl -sSfL -o "OpenRocket-$VERSION.jar" \
+          curl -sSfL --retry 3 -o "OpenRocket-$VERSION.jar" \
             "https://github.com/openrocket/openrocket/releases/download/$TAG/OpenRocket-$VERSION.jar"
           uv sync
           uv run python tests/integration/cases/happy.py "OpenRocket-$VERSION.jar" | tee canary.out

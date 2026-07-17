@@ -74,11 +74,7 @@ def test_listener_exception_propagates(jar):
 def test_cross_version_apogee_tolerance(all_jars):
     """Same rocket, zero wind: apogee must agree across every version within a
     band. Profiles catch name drift; only result comparison catches semantic
-    drift. Runs once (not per matrix cell)."""
-    only = os.environ.get("ORLAB_TEST_VERSION")
-    if only not in (None, "24.12"):
-        pytest.skip("cross-version comparison runs in the 24.12 cell only")
-
+    drift. Runs in the 24.12 cells only (the fixture skips elsewhere)."""
     apogees = {v: run_case("happy.py", path)["apogee"] for v, path in all_jars.items()}
     reference = apogees["24.12"]
     for version, apogee in apogees.items():

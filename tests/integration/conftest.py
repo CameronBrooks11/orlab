@@ -56,5 +56,10 @@ def jar(request):
 
 @pytest.fixture
 def all_jars():
-    """Every supported version's jar — for cross-version comparisons."""
+    """Every supported version's jar — for cross-version comparisons.
+    Skips before downloading anything in matrix cells other than 24.12, so
+    per-version CI caches hold only their own jar."""
+    only = os.environ.get("ORLAB_TEST_VERSION")
+    if only not in (None, "24.12"):
+        pytest.skip("cross-version comparison runs in the 24.12 cells only")
     return {v: jar_path(v) for v in sorted(JARS)}
