@@ -61,5 +61,5 @@ with orlab.OpenRocketInstance() as instance:
     ax1.set_title("Optimal launch rod angle for easy recovery")
     ax1.grid(True)
 
-# Leave OpenRocketInstance context before showing plot in order to shutdown JVM first
+# Data is plain numpy by now; the plot needs nothing from the instance
 plt.show()

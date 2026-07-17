@@ -6,17 +6,19 @@ from typing import Any
 import jpype
 
 from .._enums import OrLogLevel
-from ..errors import NotAnOpenRocketJar
+from ..errors import NotAnOpenRocketJar, OrlabError
 from ..profiles import get_profile
 from ..utils.utils import _get_private_field
 from .version import read_or_version
 
 __all__ = ["OpenRocketInstance"]
 
-# The core package root of the running OpenRocket, set when an instance starts.
-# Module state is safe here: JPype allows exactly one JVM (and therefore one
-# OpenRocket version) per process.
+# State of the running OpenRocket, set when an instance starts. Module state
+# is safe here: JPype allows exactly one JVM (and therefore one OpenRocket
+# version) per process. The JVM outlives instances (JPype cannot restart one);
+# it ends with the interpreter.
 _active_core_root = None
+_active_jar_path: str | None = None  # abspath of the jar the running JVM loaded
 
 
 def active_core_root():
@@ -67,9 +69,13 @@ def _default_jar_path() -> str:
 
 
 class OpenRocketInstance:
-    """This class is designed to be called using the 'with' construct. This
-    will ensure that no matter what happens within that context, the
-    JVM will always be shutdown.
+    """Use with the 'with' construct: entering starts the JVM and OpenRocket
+    on first use. The JVM cannot be restarted in a process (JPype), so it
+    stays up after the block and ends with the interpreter — a later
+    ``with OpenRocketInstance(...)`` on the same jar reuses it (sequential
+    blocks and notebook re-runs work); a different jar raises OrlabError.
+    OpenRocket's log level is process-global: the most recently entered
+    instance's log_level wins.
     """
 
     # Optionally define the path to the JVM manually
@@ -117,7 +123,29 @@ class OpenRocketInstance:
             self.or_log_level = log_level
 
     def __enter__(self):
-        global _active_core_root
+        global _active_core_root, _active_jar_path
+
+        if jpype.isJVMStarted():
+            requested = os.path.abspath(self.jar_path)
+            if _active_jar_path is None:
+                raise OrlabError(
+                    "This process's JVM is running but OpenRocket startup never "
+                    "completed (an earlier attempt failed, or the JVM was started "
+                    "outside orlab). JPype cannot restart a JVM — retry in a new "
+                    "process."
+                )
+            if requested != _active_jar_path:
+                raise OrlabError(
+                    f"A JVM is already running with {_active_jar_path}, and JPype "
+                    "cannot restart a JVM — one process can use only one OpenRocket "
+                    f"jar. Use a new process for {requested}."
+                )
+            # Same jar: reuse the running OpenRocket.
+            self.openrocket = _active_core_root
+            self.openrocket_swing = _jpackage(self.profile.swing_root)
+            self._set_or_log_level()
+            self.started = True
+            return self
 
         # Use MANUAL_JVM_PATH if set, otherwise get default JVM path
         jvm_path = self.MANUAL_JVM_PATH or jpype.getDefaultJVMPath()
@@ -138,14 +166,31 @@ class OpenRocketInstance:
             jvm_args.append("-Djava.awt.headless=true")
         jpype.startJVM(jvm_path, *jvm_args)
 
+        try:
+            self._start_openrocket()
+        except Exception as e:
+            for window in jpype.java.awt.Window.getWindows():
+                window.dispose()
+            raise OrlabError(
+                "OpenRocket startup failed after the JVM launched; the JVM cannot "
+                "be restarted, so retry in a new process once the cause is fixed."
+            ) from e
+
+        _active_core_root = self.openrocket
+        _active_jar_path = os.path.abspath(self.jar_path)
+        self._warn_on_profile_drift()
+        self.started = True
+
+        return self
+
+    def _start_openrocket(self):
+        """Bootstraps OpenRocket inside the (fresh) JVM. The module globals are
+        set by __enter__ only after this succeeds."""
         # ----- Java imports -----
         # Package roots come from the version profile (OpenRocket 24.12 renamed
         # net.sf.openrocket to info.openrocket.core + info.openrocket.swing).
         self.openrocket = _jpackage(self.profile.core_root)
         self.openrocket_swing = _jpackage(self.profile.swing_root)
-        _active_core_root = self.openrocket
-        LoggerFactory = jpype.JPackage("org").slf4j.LoggerFactory
-        Logger = jpype.JPackage("ch").qos.logback.classic.Logger
         # -----
 
         if self.profile.startup == "core":
@@ -174,27 +219,25 @@ class OpenRocketInstance:
             motor_loader = _get_private_field(gui_module, "motorLoader")
             motor_loader.blockUntilLoaded()
 
+        self._set_or_log_level()
+
+    def _set_or_log_level(self):
+        LoggerFactory = jpype.JPackage("org").slf4j.LoggerFactory
+        Logger = jpype.JPackage("ch").qos.logback.classic.Logger
         or_logger = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)
         or_logger.setLevel(self._translate_log_level())
 
-        self._warn_on_profile_drift()
-
-        self.started = True
-
-        return self
-
     def __exit__(self, ex, value, tb):
+        # Dispose any open windows (usually just a loading screen); the JVM
+        # itself stays up — JPype cannot restart one, so shutting it down here
+        # would break every later OpenRocketInstance in this process. It ends
+        # with the interpreter. Existing Helpers and listeners stay usable.
+        if jpype.isJVMStarted():
+            for window in jpype.java.awt.Window.getWindows():
+                window.dispose()
 
-        # Dispose any open windows (usually just a loading screen) which can prevent the JVM from shutting down
-        for window in jpype.java.awt.Window.getWindows():
-            window.dispose()
-
-        jpype.shutdownJVM()
-        logger.info("JVM shut down")
         self.started = False
-
-        if ex is not None:
-            logger.exception("Exception while calling OpenRocket", exc_info=(ex, value, tb))
+        logger.info("OpenRocketInstance closed (JVM stays up for reuse)")
 
     def _warn_on_profile_drift(self):
         """Compares the live jar's constants against the profile (drift alarm).
