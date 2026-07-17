@@ -25,9 +25,7 @@ with orlab.OpenRocketInstance() as instance:
     def to_min(ang, sim):
         data = simulate_at_angle(ang, sim)
         half_len = len(data[FlightDataType.TYPE_ALTITUDE]) // 2  # Don't want the launch
-        min_upwind_index = np.abs(
-            data[FlightDataType.TYPE_ALTITUDE][half_len:]
-        ).argmin()
+        min_upwind_index = np.abs(data[FlightDataType.TYPE_ALTITUDE][half_len:]).argmin()
         min_upwind_position = data[FlightDataType.TYPE_POSITION_X][half_len:][
             min_upwind_index
         ]  # X is upwind for simple.ork

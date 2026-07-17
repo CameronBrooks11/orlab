@@ -41,11 +41,17 @@ with orlab.OpenRocketInstance() as instance:
     ax1.set_xlabel("Time (s)")
     ax1.set_ylabel("Altitude (m)", color="b")
     ax2.set_ylabel("Vertical Velocity (m/s)", color="r")
-    change_color = lambda ax, col: [x.set_color(col) for x in ax.get_yticklabels()]
+
+    def change_color(ax, col):
+        for x in ax.get_yticklabels():
+            x.set_color(col)
+
     change_color(ax1, "b")
     change_color(ax2, "r")
 
-    index_at = lambda t: (np.abs(data[FlightDataType.TYPE_TIME] - t)).argmin()
+    def index_at(t):
+        return (np.abs(data[FlightDataType.TYPE_TIME] - t)).argmin()
+
     for event, times in events.items():
         if event not in events_to_annotate:
             continue

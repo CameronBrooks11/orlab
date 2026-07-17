@@ -2,21 +2,16 @@ from copy import copy
 import jpype
 from .openrocket_instance import active_core_root
 
-__all__ = ['AbstractSimulationListener']
+__all__ = ["AbstractSimulationListener"]
 
 
 class AbstractSimulationListener:
-    """ This is a python implementation of openrocket.simulation.listeners.AbstractSimulationListener.
-        Subclasses of this are suitable for passing to helper.run_simulation.
+    """This is a python implementation of openrocket.simulation.listeners.AbstractSimulationListener.
+    Subclasses of this are suitable for passing to helper.run_simulation.
     """
 
     def __str__(self):
-        return (
-                "'"
-                + "Python simulation listener proxy : "
-                + str(self.__class__.__name__)
-                + "'"
-        )
+        return "'" + "Python simulation listener proxy : " + str(self.__class__.__name__) + "'"
 
     def toString(self):
         return str(self)
@@ -101,9 +96,12 @@ class AbstractSimulationListener:
 
     def clone(self):
         openrocket = active_core_root()
-        return jpype.JProxy((
-            openrocket.simulation.listeners.SimulationListener,
-            openrocket.simulation.listeners.SimulationEventListener,
-            openrocket.simulation.listeners.SimulationComputationListener,
-            jpype.java.lang.Cloneable,),
-            inst=copy(self))
+        return jpype.JProxy(
+            (
+                openrocket.simulation.listeners.SimulationListener,
+                openrocket.simulation.listeners.SimulationEventListener,
+                openrocket.simulation.listeners.SimulationComputationListener,
+                jpype.java.lang.Cloneable,
+            ),
+            inst=copy(self),
+        )
