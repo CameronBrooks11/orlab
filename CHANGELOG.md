@@ -5,7 +5,7 @@ All notable changes to orlab are documented here. Follows
 [Semantic Versioning](https://semver.org). History before 0.3.0 was
 reconstructed from the git log.
 
-## [Unreleased]
+## [0.4.0] — 2026-07-17
 
 ### Added
 
@@ -39,7 +39,7 @@ reconstructed from the git log.
   numeric `.value`s shifted and remain non-stable identifiers; use names.
 - Snapshot version strings (`26.xx-SNAPSHOT`) parse instead of erroring.
 
-## [0.3.1] — 2026-07-16
+## [0.3.1] — 2026-07-17
 
 ### Added
 
