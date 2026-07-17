@@ -90,7 +90,9 @@ def test_enums_match_profile_union():
 def test_enums_file_is_regeneration_identical():
     """The committed _enums.py is byte-identical to what the generator renders."""
     generate_enums = _load_tool("generate_enums")
-    assert generate_enums.render_enums() == (REPO / "src" / "orlab" / "_enums.py").read_text()
+    assert generate_enums.render_enums() == (REPO / "src" / "orlab" / "_enums.py").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_profile_files_are_regeneration_identical():
@@ -111,7 +113,7 @@ def test_profile_files_are_regeneration_identical():
             mod.FLIGHT_DATA_TYPES,
             mod.FLIGHT_EVENTS,
         )
-        assert rendered == path.read_text(), path.name
+        assert rendered == path.read_text(encoding="utf-8"), path.name
 
 
 def test_no_orphan_profile_modules():

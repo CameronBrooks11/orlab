@@ -181,7 +181,7 @@ def main():
     )
     version = parse_version(version_string)
     out_path = os.path.join(out_dir, f"or_{version[0]:02d}_{version[1]:02d}.py")
-    with open(out_path, "w") as fh:
+    with open(out_path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(body)
     print(f"WROTE {out_path}: {len(data_types)} data types, {len(events)} events, {startup=}")
     return 0
