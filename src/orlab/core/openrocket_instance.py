@@ -136,7 +136,7 @@ class OpenRocketInstance:
         jar_path: str | None = None,
         log_level: OrLogLevel | str = OrLogLevel.ERROR,
         *,
-        jvm_path: str | None = None,
+        jvm_path: "str | os.PathLike[str] | None" = None,
         jvm_args: Sequence[str] = (),
     ):
         """jar_path is the full path of the OpenRocket .jar file to use;
@@ -180,7 +180,9 @@ class OpenRocketInstance:
 
         if isinstance(jvm_args, str):
             raise TypeError("jvm_args must be a sequence of strings, not a string")
-        self.jvm_path = jvm_path
+        # jpype's startJVM rejects PathLike (it reads a stray path as a VM
+        # argument) — coerce here so find_installed's Path works directly
+        self.jvm_path = os.fspath(jvm_path) if jvm_path is not None else None
         self.jvm_args = tuple(jvm_args)
         self._started_jvm = False
 
@@ -226,7 +228,7 @@ class OpenRocketInstance:
                 DeprecationWarning,
                 stacklevel=2,
             )
-            jvm_path = self.MANUAL_JVM_PATH
+            jvm_path = os.fspath(self.MANUAL_JVM_PATH)
         jvm_path = jvm_path or jpype.getDefaultJVMPath()
 
         logger.info(

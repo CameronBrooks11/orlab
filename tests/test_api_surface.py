@@ -33,7 +33,12 @@ def test_errors_surface_stable():
 def test_jars_surface_stable():
     import orlab.jars
 
-    assert sorted(orlab.jars.__all__) == ["fetch_jar", "jar_cache_dir"]
+    assert sorted(orlab.jars.__all__) == [
+        "Installed",
+        "fetch_jar",
+        "find_installed",
+        "jar_cache_dir",
+    ]
     for name in orlab.jars.__all__:
         assert getattr(orlab.jars, name) is not None
 

@@ -44,14 +44,26 @@ def main(argv: list[str] | None = None) -> int:
     import os
 
     from .core.openrocket_instance import _resolve_default_jar
+    from .jars import find_installed
+
+    def _installed_note():
+        inst = find_installed()
+        if inst is not None:
+            print(
+                f"note: desktop OpenRocket {inst.version} found at {inst.jar} "
+                "(not used automatically — pass jar_path= or set ORLAB_JAR)",
+                file=sys.stderr,
+            )
 
     try:
         path, source = _resolve_default_jar()
     except FileNotFoundError as e:
         print(f"error: {e}", file=sys.stderr)
+        _installed_note()
         return 1
     note = "" if os.path.exists(path) else " — does not exist"
     print(f"{path} (via {source}){note}")
+    _installed_note()
     return 0
 
 
