@@ -27,10 +27,11 @@ def main(jar_path):
         opts.setRandomSeed(42)
         orl.run_simulation(sim, randomize_seed=False)
 
-        out = Path(tempfile.mkdtemp()) / "flight.csv"
-        orl.export_csv(sim, out)
-        with open(out, newline="", encoding="utf-8") as fh:
-            rows = list(csv.reader(fh))
+        with tempfile.TemporaryDirectory() as tmpdir:
+            out = Path(tmpdir) / "flight.csv"
+            orl.export_csv(sim, out)
+            with open(out, newline="", encoding="utf-8") as fh:
+                rows = list(csv.reader(fh))
         header, data_rows = rows[0], rows[1:]
 
         time_series = orl.get_timeseries(sim, [orlab.FlightDataType.TYPE_TIME])

@@ -49,7 +49,7 @@ is this pattern end to end.
 
 The full per-sample record — not just the scalar summary — exports in one
 call. `export_csv` is stdlib-only; `get_dataframe` needs the
-`orlab[pandas]` extra (`pip install orlab[pandas]`; everything else in
+`orlab[pandas]` extra (`pip install 'orlab[pandas]'`; everything else in
 orlab works without pandas):
 
 ```python
@@ -58,13 +58,14 @@ frame = orl.get_dataframe(sim)      # same columns as a pandas DataFrame
 print(frame[["TYPE_TIME (s)", "TYPE_ALTITUDE (m)"]].tail())
 ```
 
-By default every data type the loaded OpenRocket populated is included,
+By default every profile data type populated on the branch is included,
 `TYPE_TIME` first; pass `variables=[...]` (enum members or constant-name
 strings) to select and order columns yourself. Column labels carry the
 jar's own SI units (`TYPE_ACCELERATION_TOTAL (m/s²)`); dimensionless
 quantities like `TYPE_MACH_NUMBER` get no suffix. NaN samples become empty
 CSV cells, which `pandas.read_csv` reads back as NaN — the round trip is
-lossless.
+lossless. Simulation warnings are not per-sample data and have no column:
+take them from `get_summary(sim).warnings`.
 
 ## Field semantics worth knowing
 

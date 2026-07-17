@@ -374,16 +374,24 @@ class Helper:
             if "TYPE_TIME" in names:
                 names.remove("TYPE_TIME")
                 names.insert(0, "TYPE_TIME")
-            candidates = [(n, self.translate_flight_data_type(n)) for n in names]
-            return [
-                (self._column_label(jt, name), jt)
-                for name, jt in candidates
-                if branch.get(jt) is not None
-            ]
+            columns = []
+            for name in names:
+                try:
+                    java_type = self.translate_flight_data_type(name)
+                except UnsupportedFlightDataType:
+                    # nearest-older fallback profile on a future jar that
+                    # dropped a constant: skip it, never abort the export
+                    _warn_absent_once(name, self._instance.or_version)
+                    continue
+                if branch.get(java_type) is not None:
+                    columns.append((self._column_label(java_type, name), java_type))
+            return columns
         columns = []
         for v in variables:
             java_type = self.translate_flight_data_type(v)
             name = v.name if isinstance(v, FlightDataType) else str(v)
+            if branch.get(java_type) is None:
+                raise ValueError(f"{name} is not populated on this branch — nothing to export")
             columns.append((self._column_label(java_type, name), java_type))
         return columns
 
@@ -437,8 +445,13 @@ class Helper:
         with open(path, "w", newline="", encoding="utf-8") as fh:
             writer = csv.writer(fh)
             writer.writerow([label for label, _ in columns])
-            for row in zip(*series, strict=True):
-                writer.writerow(["" if math.isnan(value) else repr(float(value)) for value in row])
+            try:
+                for row in zip(*series, strict=True):
+                    writer.writerow(
+                        ["" if math.isnan(value) else repr(float(value)) for value in row]
+                    )
+            except ValueError as e:  # pragma: no cover - can't-happen invariant
+                raise ValueError(f"branch series lengths differ: {e}") from e
 
     def _branch_series(self, branch, type_name: str) -> np.ndarray:
         """A branch's series for a FlightDataType constant name as a float

@@ -8,7 +8,7 @@
     pip install orlab
     ```
 
-    `pip install orlab[pandas]` adds DataFrame export
+    `pip install 'orlab[pandas]'` adds DataFrame export
     (`Helper.get_dataframe`); everything else works without it.
 
 2. **A JDK** — 17 or 21, [Adoptium Temurin](https://adoptium.net/) tested.

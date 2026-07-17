@@ -235,7 +235,7 @@ def test_tabular_export(jar):
     assert "TYPE_ACCELERATION_TOTAL (m/s²)" in header
     assert "TYPE_MACH_NUMBER" in header  # dimensionless: no unit suffix
     assert "TYPE_STABILITY" in header
-    assert not any("​" in label for label in header)
+    assert not any("\u200b" in label for label in header)
     assert result["rows"] == result["time_samples"] > 100
     assert result["first_stability_cell"] == ""  # pre-liftoff stability is NaN
     assert result["any_empty_stability"]

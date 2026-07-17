@@ -42,8 +42,8 @@ TYPES = {
     "TYPE_TIME": _JavaType("s"),
     "TYPE_ALTITUDE": _JavaType("m"),
     "TYPE_ACCELERATION_TOTAL": _JavaType("m/s²"),
-    "TYPE_MACH_NUMBER": _JavaType("​"),  # OpenRocket's dimensionless marker
-    "TYPE_STABILITY": _JavaType(" ​ "),
+    "TYPE_MACH_NUMBER": _JavaType("\u200b"),  # OpenRocket's dimensionless marker
+    "TYPE_STABILITY": _JavaType(" \u200b "),
     "TYPE_UNPOPULATED": _JavaType("m"),  # not on the branch: excluded by default
 }
 
@@ -92,7 +92,7 @@ def test_explicit_variables_keep_order_and_accept_strings():
     assert labels == ["TYPE_ALTITUDE (m)", "TYPE_TIME (s)"]
 
 
-def test_get_dataframe(tmp_path):
+def test_get_dataframe():
     pd = pytest.importorskip("pandas")
     h = _helper()
     frame = h.get_dataframe(h._sim)
@@ -136,3 +136,37 @@ def test_export_csv_read_back_by_pandas(tmp_path):
     assert list(frame.columns) == EXPECTED_LABELS
     assert pd.isna(frame["TYPE_STABILITY"][0])
     assert frame["TYPE_TIME (s)"].tolist() == [0.0, 1.0, 2.0]
+
+
+def test_explicit_unpopulated_variable_curated_error():
+    """Both methods must refuse an unpopulated explicit variable loudly —
+    not a raw TypeError (csv) or a silent NaN column (pandas)."""
+    h = _helper()
+    with pytest.raises(ValueError, match="TYPE_UNPOPULATED is not populated"):
+        h._tabular_columns(_Branch(SERIES), ["TYPE_TIME", "TYPE_UNPOPULATED"])
+
+
+def test_default_columns_tolerate_profile_drift(caplog):
+    """A fallback profile listing a constant the live jar dropped must skip
+    it with a warning, never abort a default export."""
+    import logging
+
+    from orlab.errors import UnsupportedFlightDataType
+
+    h = _helper()
+    real_translate = h.translate_flight_data_type
+
+    def translate(v):
+        if v == "TYPE_ALTITUDE":
+            raise UnsupportedFlightDataType("gone in this jar")
+        return real_translate(v)
+
+    h.translate_flight_data_type = translate
+    import orlab.core.helper as helper_mod
+
+    helper_mod._absence_warned.discard("TYPE_ALTITUDE")
+    with caplog.at_level(logging.WARNING):
+        labels = [label for label, _ in h._tabular_columns(_Branch(SERIES), None)]
+    assert "TYPE_ALTITUDE (m)" not in labels
+    assert "TYPE_TIME (s)" in labels
+    assert "TYPE_ALTITUDE" in caplog.text
