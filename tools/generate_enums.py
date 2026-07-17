@@ -63,7 +63,7 @@ def render_enums():
 
 
 def main():
-    with open("src/orlab/_enums.py", "w") as fh:
+    with open("src/orlab/_enums.py", "w", encoding="utf-8", newline="\n") as fh:
         fh.write(render_enums())
     types = set().union(*(p.flight_data_types for p in profiles.values()))
     events = set().union(*(p.flight_events for p in profiles.values()))
