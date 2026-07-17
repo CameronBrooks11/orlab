@@ -30,3 +30,8 @@ check:
 # Run the unit test suite (no OpenRocket jar or JVM required).
 test:
     uv run pytest -q
+
+# Integration tests against real OpenRocket jars (downloaded to the cache
+# dir on first run; override with ORLAB_JAR_CACHE / ORLAB_TEST_VERSION).
+test-integration:
+    uv run pytest -q -m integration tests/integration
