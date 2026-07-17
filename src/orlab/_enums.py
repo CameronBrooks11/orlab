@@ -1,10 +1,11 @@
 from enum import Enum, auto
 
 __all__ = [
-    'OrLogLevel',
-    'FlightDataType',
-    'FlightEvent',
+    "OrLogLevel",
+    "FlightDataType",
+    "FlightEvent",
 ]
+
 
 class OrLogLevel(Enum):
     OFF = auto()
@@ -14,6 +15,7 @@ class OrLogLevel(Enum):
     DEBUG = auto()
     TRACE = auto()
     ALL = auto()
+
 
 # Mirrors net.sf.openrocket.simulation.FlightDataType
 class FlightDataType(Enum):
@@ -72,6 +74,7 @@ class FlightDataType(Enum):
     TYPE_SPEED_OF_SOUND = auto()
     TYPE_TIME_STEP = auto()
     TYPE_COMPUTATION_TIME = auto()
+
 
 # Mirrors net.sf.openrocket.simulation.FlightEvent
 class FlightEvent(Enum):

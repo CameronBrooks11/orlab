@@ -1,12 +1,14 @@
-import os
-import jpype
 import logging
-from typing import Union
+import os
+from typing import Any
+
+import jpype
+
 from .._enums import OrLogLevel
 from ..utils.utils import _get_private_field
 from .version import read_or_version, select_roots
 
-__all__ = ['OpenRocketInstance']
+__all__ = ["OpenRocketInstance"]
 
 # The core package root of the running OpenRocket, set when an instance starts.
 # Module state is safe here: JPype allows exactly one JVM (and therefore one
@@ -15,42 +17,44 @@ _active_core_root = None
 
 
 def active_core_root():
-    """ Returns the JPackage core root of the started OpenRocket instance. """
+    """Returns the JPackage core root of the started OpenRocket instance."""
     if _active_core_root is None:
         raise RuntimeError("No OpenRocketInstance has been started in this process")
     return _active_core_root
 
 
 def _jpackage(dotted: str):
-    """ Resolves a dotted package name to a jpype JPackage object. """
+    """Resolves a dotted package name to a jpype JPackage object."""
     parts = dotted.split(".")
     pkg = jpype.JPackage(parts[0])
     for part in parts[1:]:
         pkg = getattr(pkg, part)
     return pkg
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 CLASSPATH = os.environ.get("CLASSPATH", "OpenRocket-23.09.jar")
 
+
 class OpenRocketInstance:
-    """ This class is designed to be called using the 'with' construct. This
-        will ensure that no matter what happens within that context, the 
-        JVM will always be shutdown.
+    """This class is designed to be called using the 'with' construct. This
+    will ensure that no matter what happens within that context, the
+    JVM will always be shutdown.
     """
 
     # Optionally define the path to the JVM manually
-    MANUAL_JVM_PATH = None  
-    #MANUAL_JVM_PATH = r'C:\Program Files\Java\jdk-22\bin\server\jvm.dll'  
-    #MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-21.0.5.11-hotspot\bin\server\jvm.dll'
-    #MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot\bin\server\jvm.dll'
+    MANUAL_JVM_PATH = None
+    # MANUAL_JVM_PATH = r'C:\Program Files\Java\jdk-22\bin\server\jvm.dll'
+    # MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-21.0.5.11-hotspot\bin\server\jvm.dll'
+    # MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot\bin\server\jvm.dll'
 
-    def __init__(self, jar_path: str = CLASSPATH, log_level: Union[OrLogLevel, str] = OrLogLevel.ERROR):
-        """ jar_path is the full path of the OpenRocket .jar file to use
-            log_level can be either OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL
+    def __init__(self, jar_path: str = CLASSPATH, log_level: OrLogLevel | str = OrLogLevel.ERROR):
+        """jar_path is the full path of the OpenRocket .jar file to use
+        log_level can be either OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL
         """
-        self.openrocket = None
+        self.openrocket: Any = None  # JPackage core root once started
         self.started = False
 
         if not os.path.exists(jar_path):
@@ -69,15 +73,19 @@ class OpenRocketInstance:
         # Use MANUAL_JVM_PATH if set, otherwise get default JVM path
         jvm_path = self.MANUAL_JVM_PATH or jpype.getDefaultJVMPath()
 
-        logger.info(f"Starting JVM from {jvm_path} CLASSPATH={self.jar_path} "
-                    f"(OpenRocket {self.or_version})")
+        logger.info(
+            f"Starting JVM from {jvm_path} CLASSPATH={self.jar_path} (OpenRocket {self.or_version})"
+        )
 
         # --add-opens: OpenRocket <= 15.03 bundles a Guice that reflects into
         # java.lang, which the module system blocks on modern JVMs. Harmless
         # on newer OpenRocket versions.
-        jpype.startJVM(jvm_path, "-ea",
-                       "--add-opens=java.base/java.lang=ALL-UNNAMED",
-                       f"-Djava.class.path={self.jar_path}")
+        jpype.startJVM(
+            jvm_path,
+            "-ea",
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            f"-Djava.class.path={self.jar_path}",
+        )
 
         # ----- Java imports -----
         # OpenRocket 24.12 renamed net.sf.openrocket to info.openrocket.core +

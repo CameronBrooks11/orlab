@@ -1,8 +1,10 @@
-import os
-import numpy as np
-import orlab
-from random import gauss
 import math
+import os
+from random import gauss
+
+import numpy as np
+
+import orlab
 
 
 class LandingPoints(list):
@@ -14,7 +16,6 @@ class LandingPoints(list):
 
     def add_simulations(self, num):
         with orlab.OpenRocketInstance() as instance:
-
             # Load the document and get simulation
             orl = orlab.Helper(instance)
             doc = orl.load_doc(os.path.join("examples/simple_ork", "simple.ork"))
@@ -28,12 +29,8 @@ class LandingPoints(list):
             for p in range(num):
                 print("Running simulation ", p)
 
-                opts.setLaunchRodAngle(
-                    math.radians(gauss(45, 5))
-                )  # 45 +- 5 deg in direction
-                opts.setLaunchRodDirection(
-                    math.radians(gauss(0, 5))
-                )  # 0 +- 5 deg in direction
+                opts.setLaunchRodAngle(math.radians(gauss(45, 5)))  # 45 +- 5 deg in direction
+                opts.setLaunchRodDirection(math.radians(gauss(0, 5)))  # 0 +- 5 deg in direction
                 opts.setWindSpeedAverage(gauss(15, 5))  # 15 +- 5 m/s in wind
                 for component_name in (
                     "Nose cone",
@@ -53,14 +50,10 @@ class LandingPoints(list):
 
     def print_stats(self):
         print(
-            "Rocket landing zone %3.2f m +- %3.2f m bearing %3.2f deg +- %3.4f deg from launch site. Based on %i simulations."
-            % (
-                np.mean(self.ranges),
-                np.std(self.ranges),
-                np.degrees(np.mean(self.bearings)),
-                np.degrees(np.std(self.bearings)),
-                len(self),
-            )
+            f"Rocket landing zone {np.mean(self.ranges):3.2f} m +- {np.std(self.ranges):3.2f} m "
+            f"bearing {np.degrees(np.mean(self.bearings)):3.2f} deg "
+            f"+- {np.degrees(np.std(self.bearings)):3.4f} deg from launch site. "
+            f"Based on {len(self)} simulations."
         )
 
 
@@ -83,7 +76,6 @@ class LandingPoint(orlab.AbstractSimulationListener):
 
 
 class AirStart(orlab.AbstractSimulationListener):
-
     def __init__(self, altitude):
         self.start_altitude = altitude
 
@@ -99,17 +91,13 @@ METERS_PER_DEGREE_LONGITUDE_EQUATOR = 111050
 
 def range_flat(start, end):
     dy = (end.getLatitudeDeg() - start.getLatitudeDeg()) * METERS_PER_DEGREE_LATITUDE
-    dx = (
-        end.getLongitudeDeg() - start.getLongitudeDeg()
-    ) * METERS_PER_DEGREE_LONGITUDE_EQUATOR
+    dx = (end.getLongitudeDeg() - start.getLongitudeDeg()) * METERS_PER_DEGREE_LONGITUDE_EQUATOR
     return math.sqrt(dy * dy + dx * dx)
 
 
 def bearing_flat(start, end):
     dy = (end.getLatitudeDeg() - start.getLatitudeDeg()) * METERS_PER_DEGREE_LATITUDE
-    dx = (
-        end.getLongitudeDeg() - start.getLongitudeDeg()
-    ) * METERS_PER_DEGREE_LONGITUDE_EQUATOR
+    dx = (end.getLongitudeDeg() - start.getLongitudeDeg()) * METERS_PER_DEGREE_LONGITUDE_EQUATOR
     return math.pi / 2 - math.atan(dy / dx)
 
 

@@ -1,4 +1,4 @@
-__all__ = ['JIterator']
+__all__ = ["JIterator"]
 
 
 class JIterator:

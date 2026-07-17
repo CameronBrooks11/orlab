@@ -1,7 +1,7 @@
 # advanced_plot.py
 
 import os
-import numpy as np
+
 from matplotlib import pyplot as plt
 
 import orlab
@@ -54,15 +54,27 @@ with orlab.OpenRocketInstance() as instance:
     axs[0, 1].grid(True)
 
     # Total Acceleration vs Time
-    axs[1, 0].plot(data[FlightDataType.TYPE_TIME], data[FlightDataType.TYPE_ACCELERATION_TOTAL], "g-")
+    axs[1, 0].plot(
+        data[FlightDataType.TYPE_TIME], data[FlightDataType.TYPE_ACCELERATION_TOTAL], "g-"
+    )
     axs[1, 0].set_xlabel("Time (s)")
     axs[1, 0].set_ylabel("Acceleration (m/s²)")
     axs[1, 0].set_title("Total Acceleration vs Time")
     axs[1, 0].grid(True)
 
     # Thrust and Drag Forces vs Time
-    axs[1, 1].plot(data[FlightDataType.TYPE_TIME], data[FlightDataType.TYPE_THRUST_FORCE], "m-", label="Thrust Force")
-    axs[1, 1].plot(data[FlightDataType.TYPE_TIME], data[FlightDataType.TYPE_DRAG_FORCE], "c-", label="Drag Force")
+    axs[1, 1].plot(
+        data[FlightDataType.TYPE_TIME],
+        data[FlightDataType.TYPE_THRUST_FORCE],
+        "m-",
+        label="Thrust Force",
+    )
+    axs[1, 1].plot(
+        data[FlightDataType.TYPE_TIME],
+        data[FlightDataType.TYPE_DRAG_FORCE],
+        "c-",
+        label="Drag Force",
+    )
     axs[1, 1].set_xlabel("Time (s)")
     axs[1, 1].set_ylabel("Force (N)")
     axs[1, 1].set_title("Thrust and Drag Forces vs Time")
@@ -91,8 +103,18 @@ with orlab.OpenRocketInstance() as instance:
     axs[3, 0].grid(True)
 
     # CG and CP Locations vs Time
-    axs[3, 1].plot(data[FlightDataType.TYPE_TIME], data[FlightDataType.TYPE_CG_LOCATION], "g-", label="CG Location")
-    axs[3, 1].plot(data[FlightDataType.TYPE_TIME], data[FlightDataType.TYPE_CP_LOCATION], "m-", label="CP Location")
+    axs[3, 1].plot(
+        data[FlightDataType.TYPE_TIME],
+        data[FlightDataType.TYPE_CG_LOCATION],
+        "g-",
+        label="CG Location",
+    )
+    axs[3, 1].plot(
+        data[FlightDataType.TYPE_TIME],
+        data[FlightDataType.TYPE_CP_LOCATION],
+        "m-",
+        label="CP Location",
+    )
     axs[3, 1].set_xlabel("Time (s)")
     axs[3, 1].set_ylabel("Location (m)")
     axs[3, 1].set_title("CG and CP Locations vs Time")
