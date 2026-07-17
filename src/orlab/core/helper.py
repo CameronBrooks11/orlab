@@ -5,7 +5,7 @@ import jpype
 import numpy as np
 
 from .._enums import FlightDataType, FlightEvent
-from ..errors import UnsupportedFlightDataType
+from ..errors import OrlabError, UnsupportedFlightDataType
 from ..profiles import versions_with
 from .jiterator import JIterator
 from .openrocket_instance import OpenRocketInstance
@@ -25,7 +25,10 @@ class Helper:
 
     def __init__(self, open_rocket_instance: OpenRocketInstance):
         if not open_rocket_instance.started:
-            raise Exception("OpenRocketInstance not yet started")
+            raise OrlabError(
+                "OpenRocketInstance not started — enter it first "
+                "('with OpenRocketInstance(...) as instance:')"
+            )
 
         self._instance = open_rocket_instance
         self.openrocket = open_rocket_instance.openrocket
