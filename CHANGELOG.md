@@ -5,7 +5,7 @@ All notable changes to orlab are documented here. Follows
 [Semantic Versioning](https://semver.org). History before 0.3.0 was
 reconstructed from the git log.
 
-## [Unreleased]
+## [0.7.0] — 2026-07-17
 
 ### Added
 

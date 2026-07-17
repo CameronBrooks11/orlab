@@ -1411,7 +1411,7 @@ wheels = [
 
 [[package]]
 name = "orlab"
-version = "0.7.0.dev0"
+version = "0.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "jpype1" },
