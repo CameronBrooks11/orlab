@@ -78,6 +78,43 @@ against). A jar you fetched with `sha256=` stays cached, but you point at
 it explicitly — capture the printed path into `ORLAB_JAR` or pass it as
 `jar_path=`.
 
+## Using a desktop OpenRocket install
+
+If the OpenRocket desktop app is installed, `orlab.jars.find_installed()`
+locates its jar — and, when the install bundles a Java 17+ runtime, a JVM
+to run it with, so a machine with the app needs no separate JDK or jar:
+
+```python
+import orlab
+from orlab.jars import find_installed
+
+inst = find_installed()  # Installed(jar=..., jvm=..., version=...) or None
+with orlab.OpenRocketInstance(str(inst.jar), jvm_path=inst.jvm) as instance:
+    ...
+```
+
+Discovery is deliberately **not** part of the default resolution chain —
+a desktop app that updates itself could silently switch your scripts to an
+unverified version, so selecting a discovered install is always this
+explicit two-liner. `find_installed` never raises and never downloads; it
+returns `None` when nothing usable is found.
+
+Where it looks:
+
+| OS | Location | Status |
+| -- | -------- | ------ |
+| Linux | install root from the installer's `.desktop` entry | verified against a real install |
+| macOS | `/Applications/OpenRocket.app/Contents/Resources/app` | config-derived, best-effort |
+| Windows | `%ProgramFiles%\OpenRocket` | config-derived, best-effort |
+
+`ORLAB_OR_INSTALL_DIR` overrides the search with an explicit install root;
+setting it to an empty string disables discovery entirely. Within a root,
+both the modern `jar/OpenRocket-*.jar` layout and the older root-level
+`OpenRocket.jar` are recognized, and the version is always read from the
+jar itself. `inst.jvm` is only set when the bundled JRE is Java 17+ —
+older installs bundle Java 8/11, which cannot run orlab; their jar is
+still usable with your own JDK.
+
 ## Worth knowing about the default version
 
 `python -m orlab fetch` currently fetches OpenRocket 24.12. On its headless

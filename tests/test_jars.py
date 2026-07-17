@@ -39,6 +39,7 @@ def hermetic(tmp_path, monkeypatch, cache):
     jar cache."""
     monkeypatch.delenv("ORLAB_JAR", raising=False)
     monkeypatch.delenv("CLASSPATH", raising=False)
+    monkeypatch.setenv("ORLAB_OR_INSTALL_DIR", "")  # disable install discovery
     monkeypatch.chdir(tmp_path)
     return tmp_path
 

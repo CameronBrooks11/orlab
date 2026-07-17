@@ -108,6 +108,23 @@ def test_zero_config_boot_from_cache(jar, tmp_path):
     assert result["apogee"] > 10
 
 
+def test_discovery_boot_from_fake_install(jar, tmp_path):
+    """find_installed on an installer-layout tree (jar/ subdir), booted via
+    the documented explicit two-liner. The fake tree has no bundled JRE, so
+    this also covers the jvm=None path."""
+    version, path = jar
+    root = tmp_path / "install"
+    (root / "jar").mkdir(parents=True)
+    shutil.copy2(path, root / "jar" / path.name)
+    env = {k: v for k, v in os.environ.items() if k not in ("ORLAB_JAR", "CLASSPATH")}
+    env["ORLAB_OR_INSTALL_DIR"] = str(root)
+
+    result = run_case("discovery_boot.py", None, env=env, cwd=tmp_path)
+    assert result["version"] == version
+    assert Path(result["jar"]) == root / "jar" / path.name
+    assert result["apogee"] > 10
+
+
 def test_cross_version_apogee_tolerance(all_jars):
     """Same rocket, zero wind: apogee must agree across every version within a
     band. Profiles catch name drift; only result comparison catches semantic

@@ -22,6 +22,14 @@ reconstructed from the git log.
   directory → newest verified jar in the cache. `OpenRocketInstance()`
   works with zero configuration after one `python -m orlab fetch`.
   `OpenRocketInstance` itself never downloads anything.
+- `orlab.jars.find_installed()`: locates a desktop OpenRocket installation
+  (jar, version, and — when the install bundles a Java 17+ runtime — a JVM
+  to run it with), so a machine with the app needs no separate JDK or jar.
+  Deliberately opt-in: the default jar resolution never selects a desktop
+  install (a self-updating app could silently switch scripts to an
+  unverified version); use the explicit
+  `OpenRocketInstance(str(inst.jar), jvm_path=inst.jvm)` two-liner.
+  `ORLAB_OR_INSTALL_DIR` overrides the search; empty string disables it.
 - Docs: "Getting an OpenRocket jar" guide page.
 - Guides on the docs site: simulation listeners (hooks, the clone/shared-state
   contract), monte-carlo studies (the one-instance-many-sims pattern, seeds),

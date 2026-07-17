@@ -13,15 +13,19 @@ import hashlib
 import logging
 import os
 import re
+import shlex
+import sys
 import tempfile
 import urllib.error
 import urllib.request
 from pathlib import Path
+from typing import NamedTuple
 
 from ._pins import DEFAULT_VERSION, PINNED_SHA256
+from .core.version import parse_version, read_or_version
 from .errors import JarVerificationError
 
-__all__ = ["fetch_jar", "jar_cache_dir"]
+__all__ = ["Installed", "fetch_jar", "find_installed", "jar_cache_dir"]
 
 logger = logging.getLogger(__name__)
 
@@ -198,6 +202,154 @@ def fetch_jar(version: str | None = None, *, sha256: str | None = None) -> Path:
         _evict(path)
     _fetch_verified(url, path, expected)
     return path
+
+
+class Installed(NamedTuple):
+    """A discovered desktop OpenRocket installation."""
+
+    jar: Path
+    jvm: Path | None  # bundled JVM library, only when its JRE is 17+
+    version: str
+
+
+def find_installed() -> Installed | None:
+    """Locates a desktop OpenRocket installation — for users who have the
+    app but no separate jar or JDK. Explicit opt-in: the default jar
+    resolution never calls this. Typical use::
+
+        inst = orlab.jars.find_installed()
+        if inst:
+            instance = orlab.OpenRocketInstance(str(inst.jar), jvm_path=inst.jvm)
+
+    Never raises and never downloads; returns None when nothing usable is
+    found. ``ORLAB_OR_INSTALL_DIR`` overrides the per-OS search (its parent
+    directory conventions still apply inside); setting it to the empty
+    string disables discovery entirely. ``jvm`` is the install's bundled
+    JVM library when that JRE is Java 17+ (older bundled JREs can't run
+    orlab; the jar itself is still usable with your own JDK).
+    """
+    try:
+        override = os.environ.get("ORLAB_OR_INSTALL_DIR")
+        if override is not None:
+            roots = [Path(override)] if override else []
+        else:
+            roots = _platform_install_roots()
+        for root in roots:
+            found = _probe_install_root(root)
+            if found is not None:
+                return found
+    except Exception:  # never-raise contract: discovery is best-effort
+        logger.debug("installed-OpenRocket discovery failed", exc_info=True)
+    return None
+
+
+def _platform_install_roots() -> list[Path]:
+    if sys.platform.startswith("linux"):
+        return _desktop_install_roots()
+    if sys.platform == "darwin":
+        return [Path("/Applications/OpenRocket.app/Contents/Resources/app")]
+    if sys.platform == "win32":
+        return [Path(os.environ.get("PROGRAMFILES", r"C:\Program Files")) / "OpenRocket"]
+    return []
+
+
+def _desktop_install_roots() -> list[Path]:
+    """Install roots from install4j's .desktop breadcrumbs: the Exec= value
+    is a quoted launcher path plus %U-style field codes; the launcher's
+    parent directory is the install root."""
+    apps = Path.home() / ".local" / "share" / "applications"
+    roots = []
+    try:
+        desktops = sorted(apps.glob("install4j_*-OpenRocket.desktop"))
+    except OSError:
+        return []
+    for desktop in desktops:
+        try:
+            text = desktop.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for line in text.splitlines():
+            if line.startswith("Exec="):
+                launcher = _parse_exec(line[len("Exec=") :])
+                if launcher:
+                    roots.append(Path(launcher).parent)
+                break
+    return roots
+
+
+def _parse_exec(value: str) -> str | None:
+    try:
+        parts = shlex.split(value)
+    except ValueError:
+        return None
+    return parts[0] if parts else None
+
+
+def _probe_install_root(root: Path) -> Installed | None:
+    if not root.is_dir():
+        logger.debug("no OpenRocket install at %s", root)
+        return None
+    jar = _install_jar(root)
+    if jar is None:
+        logger.debug("%s has no OpenRocket jar in a known layout", root)
+        return None
+    try:
+        version = read_or_version(str(jar))
+        parse_version(version)  # a jar with an unparseable version can't boot
+    except Exception:
+        logger.debug("%s is not a readable OpenRocket jar", jar, exc_info=True)
+        return None
+    return Installed(jar=jar, jvm=_bundled_jvm(root), version=version)
+
+
+def _install_jar(root: Path) -> Path | None:
+    """jar/OpenRocket-*.jar (24.12-era layout, newest version wins), else
+    OpenRocket.jar at the root (older layout)."""
+
+    def by_version(path: Path) -> tuple[int, tuple[int, int], str]:
+        try:
+            return (1, parse_version(path.name[len("OpenRocket-") : -len(".jar")]), path.name)
+        except ValueError:
+            return (0, (0, 0), path.name)
+
+    jar_dir = root / "jar"
+    if jar_dir.is_dir():
+        candidates = sorted(
+            (p for p in jar_dir.glob("OpenRocket-*.jar") if p.is_file()), key=by_version
+        )
+        if candidates:
+            return candidates[-1]
+    legacy = root / "OpenRocket.jar"
+    return legacy if legacy.is_file() else None
+
+
+def _bundled_jvm(root: Path) -> Path | None:
+    """The install's bundled JVM library, gated on its release file saying
+    Java 17+. All three OS layouts are probed unconditionally — synthetic
+    trees stay testable on any platform."""
+    for jre_home, lib in (
+        (root / "jre", root / "jre" / "lib" / "server" / "libjvm.so"),
+        (
+            root / "jre.bundle" / "Contents" / "Home",
+            root / "jre.bundle" / "Contents" / "Home" / "lib" / "server" / "libjvm.dylib",
+        ),
+        (root / "jre", root / "jre" / "bin" / "server" / "jvm.dll"),
+    ):
+        if lib.is_file() and _jre_major(jre_home / "release") >= 17:
+            return lib
+    return None
+
+
+def _jre_major(release_file: Path) -> int:
+    """The major from JAVA_VERSION="17.0.16" in a JRE release file; 0 when
+    unreadable or absent. Java 8 reads as 1 ("1.8.0_...") and is rejected
+    by the 17+ gate like everything else pre-17."""
+    try:
+        text = release_file.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return 0
+    match = re.search(r'^JAVA_VERSION="?(\d+)', text, re.MULTILINE)
+    return int(match.group(1)) if match else 0
 
 
 def _orlab_version() -> str:
