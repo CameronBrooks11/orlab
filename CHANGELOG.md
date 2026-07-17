@@ -9,6 +9,11 @@ reconstructed from the git log.
 
 ### Added
 
+- Guides on the docs site: simulation listeners (hooks, the clone/shared-state
+  contract), monte-carlo studies (the one-instance-many-sims pattern, seeds),
+  and working across OpenRocket versions (profiles, fallback, the
+  `TYPE_PROPELLANT_MASS`→`TYPE_MOTOR_MASS` rename, string escape hatch).
+  Every code block executed against a real jar.
 - Documentation site at <https://cameronbrooks11.github.io/orlab/>
   (mkdocs-material + mkdocstrings API reference, deployed from main by CI);
   `just docs` builds it locally. The maintainer release notes moved there
@@ -27,6 +32,9 @@ reconstructed from the git log.
 
 - `examples/simple_ork/lazy.py` works with modern numpy (`fmin` passes a
   1-element array that `math.radians` no longer coerces).
+- `examples/simple_ork/monte_carlo.py`: landing bearing uses `atan2` (the
+  `atan` form was wrong for westward drift and divided by zero for pure
+  north-south), and the reported mean bearing is a circular mean.
 
 ## [0.5.0] — 2026-07-17
 
