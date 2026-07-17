@@ -29,13 +29,21 @@ jobs:
         run: just check
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     permissions:
       contents: read
     strategy:
+      fail-fast: false
       matrix:
-        # 3.10 enforces the requires-python floor (mypy only checks the dev interpreter)
+        # 3.10 enforces the requires-python floor (mypy only checks the dev
+        # interpreter). The windows cell is the only automated check of the
+        # spawn/pickle/path/file-handling code on a platform the README
+        # claims; the jar-free unit suite needs no JDK or compiler there.
+        os: [ubuntu-latest]
         python-version: ["3.10", "3.14"]
+        include:
+          - os: windows-latest
+            python-version: "3.14"
     env:
       UV_PYTHON: ${{ matrix.python-version }}
     steps:

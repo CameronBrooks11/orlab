@@ -43,6 +43,9 @@ reconstructed from the git log.
   cwd, the newest supported one now wins.
 - The integration suite downloads its matrix jars through `orlab.fetch_jar`
   itself instead of a private copy of the download/verify logic.
+- CI runs the unit suite on Windows (one `windows-latest` cell, Python
+  3.14, jar-free) — the first automated check of orlab's path, cache, and
+  file handling on a platform the README documents.
 - README rewritten: version-support matrix (all four OpenRocket versions
   CI-tested), working quickstart, lifecycle/seed/JVM-options notes, trimmed
   JDK setup, uv/just development workflow.
