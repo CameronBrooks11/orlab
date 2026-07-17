@@ -28,8 +28,9 @@ One PR:
    the jar breaks anything orlab touches).
 2. `uv run python tools/generate_enums.py` — regenerates the union enums.
 3. Register the new module in `src/orlab/profiles/__init__.py` and add the
-   version + sha256 to `tests/integration/conftest.py` and the CI matrix in
-   `ci.yml`.
+   version + sha256 to `src/orlab/_pins.py` and the CI matrix in `ci.yml`
+   (the integration suite and `fetch_jar` both read the pins; changing
+   `_pins.py` also rolls the CI jar caches).
 4. `just test && just test-integration`.
 
 Until that PR lands, the new release runs on the nearest older profile with
