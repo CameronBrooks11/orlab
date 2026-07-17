@@ -696,6 +696,25 @@ class Helper:
                 f"read back {readback} (wrong mount or flight configuration?)"
             )
 
+    def get_components_of_type(self, root, component_type) -> list:
+        """Every component under root of a given type — a class name string
+        ("BodyTube", "TrapezoidFinSet", "MotorMount", …) resolved against
+        the loaded OpenRocket, or a JClass. Concrete classes, superclasses,
+        and interfaces all match; an empty list is a normal answer.
+
+        :raises ValueError: an unknown class name (named with the loaded
+            version — component classes differ across OpenRocket releases).
+        """
+        if isinstance(component_type, str):
+            java_class = getattr(self.openrocket.rocketcomponent, component_type, None)
+            if not isinstance(java_class, jpype.JClass):
+                raise ValueError(
+                    f"{component_type!r} is not a rocket-component class in "
+                    f"OpenRocket {self._instance.or_version}"
+                )
+            component_type = java_class
+        return [c for c in JIterator(root) if isinstance(c, component_type)]
+
     def get_component_named(self, root, name):
         """Finds and returns the first rocket component with the given name.
         Requires a root RocketComponent, usually this will be a RocketComponent.rocket instance.

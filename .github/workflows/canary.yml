@@ -105,6 +105,17 @@ jobs:
           assert result["eng"]["designation"] == "ORLAB45", result
           print("CANARY motor OK")
           EOF
+          uv run python tests/integration/cases/wind_profile.py "OpenRocket-$VERSION.jar" | tee wind.out
+          grep '^RESULT ' wind.out | sed 's/^RESULT //' > wind.json
+          python3 - <<'EOF'
+          import json
+
+          result = json.load(open("wind.json"))
+          assert abs(result["low_mean"] - 5.0) < 0.2, result
+          assert abs(result["high_mean"] - 20.0) < 0.5, result
+          assert 240 < result["east_bearing"] < 300, result
+          print("CANARY wind OK")
+          EOF
 
   file-issue:
     runs-on: ubuntu-latest

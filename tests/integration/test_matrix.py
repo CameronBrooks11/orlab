@@ -354,3 +354,32 @@ def test_motor_db_cold_start(jar):
     assert result["designation"] == "C6"
     assert result["sets"] > 1000
     assert result["first_lookup_s"] < 30
+
+
+def test_wind_profile_bands_and_direction(jar):
+    """The layered wind is exact (band means equal the profile within
+    tolerance, never exact float equality), and wind-from-east drifts the
+    rocket west — matching setWindDirection's meteorological convention."""
+    _, path = jar
+    result = run_case("wind_profile.py", path)
+    assert result["low_n"] > 5 and result["high_n"] > 20
+    assert result["low_mean"] == pytest.approx(5.0, abs=1e-6)
+    assert result["high_mean"] == pytest.approx(20.0, abs=1e-6)
+    assert result["east_distance"] > 10
+    assert 240 < result["east_bearing"] < 300  # west
+
+
+def test_thrust_factor(jar):
+    _, path = jar
+    result = run_case("thrust_factor.py", path)
+    assert result["boosted"] > result["baseline"] * 1.5  # probed ~51 -> ~100
+
+
+def test_typed_component_find(jar):
+    _, path = jar
+    result = run_case("typed_find.py", path)
+    assert result["BodyTube"] == ["Body tube"]
+    assert result["NoseCone"] == ["Nose cone"]
+    assert len(result["TrapezoidFinSet"]) >= 1
+    assert set(result["MotorMount"]) == {"Body tube", "Inner Tube"}  # interface match
+    assert "not a rocket-component class" in result["unknown_error"]
