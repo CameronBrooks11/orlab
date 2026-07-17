@@ -12,12 +12,13 @@ with orlab.OpenRocketInstance() as instance:
     orl = orlab.Helper(instance)
 
     # Load document, run simulation and get data and events
-    doc = orl.load_doc(os.path.join("examples/simple_ork", "simple.ork"))
+    doc = orl.load_doc(os.path.join(os.path.dirname(__file__), "simple.ork"))
     sim = doc.getSimulation(0)
 
     # Define some functions for simulating and optimizing
     def simulate_at_angle(ang, sim):
-        sim.getOptions().setLaunchRodAngle(math.radians(ang))
+        # fmin passes a 1-element array; modern numpy no longer coerces those
+        sim.getOptions().setLaunchRodAngle(math.radians(float(np.ravel(ang)[0])))
         orl.run_simulation(sim)
         return orl.get_timeseries(
             sim, [FlightDataType.TYPE_ALTITUDE, FlightDataType.TYPE_POSITION_X]
