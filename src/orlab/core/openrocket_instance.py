@@ -33,6 +33,21 @@ def _jpackage(dotted: str):
     return pkg
 
 
+def reflect_live_constants(core_pkg) -> tuple[set, set]:
+    """Reflects the FlightDataType and FlightEvent constant names from the
+    running OpenRocket. Shared by the drift alarm and the profile generator so
+    both always apply the same filter.
+    """
+    fdt_cls = core_pkg.simulation.FlightDataType
+    types = {
+        str(f.getName())
+        for f in fdt_cls.class_.getDeclaredFields()
+        if f.getType() == fdt_cls.class_
+    }
+    events = {str(v.name()) for v in core_pkg.simulation.FlightEvent.Type.values()}
+    return types, events
+
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -157,14 +172,14 @@ class OpenRocketInstance:
             logger.exception("Exception while calling OpenRocket", exc_info=(ex, value, tb))
 
     def _warn_on_profile_drift(self):
-        """Compares the live jar's constants against the profile (drift alarm)."""
-        fdt_cls = self.openrocket.simulation.FlightDataType
-        live_types = {
-            str(f.getName())
-            for f in fdt_cls.class_.getDeclaredFields()
-            if f.getType() == fdt_cls.class_
-        }
-        live_events = {str(v.name()) for v in self.openrocket.simulation.FlightEvent.Type.values()}
+        """Compares the live jar's constants against the profile (drift alarm).
+        Pure diagnostics: must never abort startup, whatever the jar looks like.
+        """
+        try:
+            live_types, live_events = reflect_live_constants(self.openrocket)
+        except Exception as e:
+            logger.warning("Profile drift check failed on OpenRocket %s: %s", self.or_version, e)
+            return
         for kind, live, known in (
             ("FlightDataType", live_types, self.profile.flight_data_types),
             ("FlightEvent", live_events, self.profile.flight_events),

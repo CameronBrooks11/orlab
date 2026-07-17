@@ -1,11 +1,28 @@
-"""Profile registry, selection, and enum-union consistency — no jar, no JVM."""
+"""Profile registry, selection, generated artifacts — no jar, no JVM."""
+
+import importlib
+import importlib.util
+import logging
+import re
+import zipfile
+from pathlib import Path
 
 import pytest
 
-from orlab import FlightDataType, FlightEvent, Helper
+from orlab import FlightDataType, FlightEvent, Helper, OpenRocketInstance
 from orlab.core.version import parse_version
 from orlab.errors import UnsupportedFlightDataType, UnsupportedOpenRocketVersion
 from orlab.profiles import get_profile, profiles, versions_with
+
+REPO = Path(__file__).parent.parent
+PROFILES_DIR = REPO / "src" / "orlab" / "profiles"
+
+
+def _load_tool(name):
+    spec = importlib.util.spec_from_file_location(name, REPO / "tools" / f"{name}.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
 def test_registry_contents():
@@ -68,6 +85,146 @@ def test_enums_match_profile_union():
     ev_union = set().union(*(p.flight_events for p in profiles.values()))
     assert {m.name for m in FlightDataType} == fdt_union
     assert {m.name for m in FlightEvent} == ev_union
+
+
+def test_enums_file_is_regeneration_identical():
+    """The committed _enums.py is byte-identical to what the generator renders."""
+    generate_enums = _load_tool("generate_enums")
+    assert generate_enums.render_enums() == (REPO / "src" / "orlab" / "_enums.py").read_text()
+
+
+def test_profile_files_are_regeneration_identical():
+    """Each committed profile is byte-identical to a re-render of its own facts
+    (guards hand edits; full regeneration from the jar is verified live)."""
+    generate_profile = _load_tool("generate_profile")
+    for path in sorted(PROFILES_DIR.glob("or_*.py")):
+        mod = importlib.import_module(f"orlab.profiles.{path.stem}")
+        jar_name = re.search(r"jar: (\S+)", mod.__doc__).group(1)
+        sha256 = re.search(r"sha256: (\w+)", mod.__doc__).group(1)
+        rendered = generate_profile.render_profile(
+            mod.VERSION_STRING,
+            jar_name,
+            sha256,
+            mod.CORE_ROOT,
+            mod.SWING_ROOT,
+            mod.STARTUP,
+            mod.FLIGHT_DATA_TYPES,
+            mod.FLIGHT_EVENTS,
+        )
+        assert rendered == path.read_text(), path.name
+
+
+def test_no_orphan_profile_modules():
+    """Every generated profile module is registered in the registry."""
+    on_disk = {path.stem for path in PROFILES_DIR.glob("or_*.py")}
+    registered = {f"or_{v[0]:02d}_{v[1]:02d}" for v in profiles}
+    assert on_disk == registered
+
+
+def _fake_jar(tmp_path, version):
+    jar = tmp_path / f"fake-{version}.jar"
+    with zipfile.ZipFile(jar, "w") as z:
+        z.writestr("build.properties", f"build.version={version}\n")
+    return str(jar)
+
+
+def test_instance_warns_on_fallback_profile(tmp_path, caplog):
+    with caplog.at_level(logging.WARNING, logger="orlab.core.openrocket_instance"):
+        instance = OpenRocketInstance(jar_path=_fake_jar(tmp_path, "26.xx-SNAPSHOT"))
+    assert instance.profile.version == (24, 12)
+    assert any("nearest older" in r.message for r in caplog.records)
+
+
+def test_instance_rejects_too_old_jar(tmp_path):
+    with pytest.raises(UnsupportedOpenRocketVersion, match="15.03"):
+        OpenRocketInstance(jar_path=_fake_jar(tmp_path, "14.11"))
+
+
+class FakeJavaClass:
+    """The java.lang.Class side of a JClass: .class_.getDeclaredFields()."""
+
+    def __init__(self, fields):
+        self._fields = fields
+
+    def getDeclaredFields(self):
+        return self._fields
+
+
+class FakeField:
+    def __init__(self, name, typ):
+        self._name, self._type = name, typ
+
+    def getName(self):
+        return self._name
+
+    def getType(self):
+        return self._type
+
+
+class FakeEnumConstant:
+    def __init__(self, name):
+        self._name = name
+
+    def name(self):
+        return self._name
+
+
+def _fake_openrocket(type_names, event_names):
+    fdt_class = FakeJavaClass([])
+    fdt_class._fields = [FakeField(n, fdt_class) for n in type_names]
+
+    class FakeFDT:
+        class_ = fdt_class
+
+    class FakeEventType:
+        @staticmethod
+        def values():
+            return [FakeEnumConstant(n) for n in event_names]
+
+    class FakeFlightEvent:
+        Type = FakeEventType
+
+    class FakeSimulation:
+        FlightDataType = FakeFDT
+        FlightEvent = FakeFlightEvent
+
+    class FakeOpenRocket:
+        simulation = FakeSimulation
+
+    return FakeOpenRocket
+
+
+def _bare_instance(openrocket, profile):
+    instance = OpenRocketInstance.__new__(OpenRocketInstance)
+    instance.openrocket = openrocket
+    instance.profile = profile
+    instance.or_version = profile.version_string
+    return instance
+
+
+def test_drift_alarm_warns_both_directions(caplog):
+    profile = profiles[(23, 9)]
+    live_types = set(profile.flight_data_types) | {"TYPE_BRAND_NEW"}
+    live_events = set(profile.flight_events) - {"APOGEE"}
+    instance = _bare_instance(_fake_openrocket(live_types, live_events), profile)
+
+    with caplog.at_level(logging.WARNING, logger="orlab.core.openrocket_instance"):
+        instance._warn_on_profile_drift()
+
+    messages = " | ".join(r.message for r in caplog.records)
+    assert "TYPE_BRAND_NEW" in messages
+    assert "APOGEE" in messages
+
+
+def test_drift_alarm_never_aborts_startup(caplog):
+    class Hostile:
+        def __getattr__(self, name):
+            raise AttributeError(name)
+
+    instance = _bare_instance(Hostile(), profiles[(23, 9)])
+    with caplog.at_level(logging.WARNING, logger="orlab.core.openrocket_instance"):
+        instance._warn_on_profile_drift()
+    assert any("drift check failed" in r.message for r in caplog.records)
 
 
 class FakeJavaFlightDataType:

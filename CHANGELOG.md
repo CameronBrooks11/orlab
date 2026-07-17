@@ -26,7 +26,9 @@ reconstructed from the git log.
 - `FlightDataType`/`FlightEvent` are now generated as the union of constants
   across all profiled versions (four 24.12-only data types added); requesting
   a constant the loaded OpenRocket version does not expose raises
-  `UnsupportedFlightDataType` naming the versions that have it.
+  `UnsupportedFlightDataType` naming the versions that have it (previously a
+  raw JPype `AttributeError`). Enum members are now sorted by name — their
+  numeric `.value`s shifted and remain non-stable identifiers; use names.
 - Snapshot version strings (`26.xx-SNAPSHOT`) parse instead of erroring.
 
 ## [0.3.1] — 2026-07-16

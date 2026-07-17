@@ -1,9 +1,10 @@
 """Version profiles: per-OpenRocket-version facts generated from the jars.
 
-Each or_XX_XX module is emitted by tools/generate_profile.py. The registry
-selects the exact profile for a jar's version, or the nearest older one for
-versions without a checked-in profile (new releases work day-one unless the
-contract drifts; regenerating is one PR).
+Internal machinery — not part of the public API. Each or_XX_XX module is
+emitted by tools/generate_profile.py. The registry selects the exact profile
+for a jar's version, or the nearest older one for versions without a
+checked-in profile (new releases work day-one unless the contract drifts;
+regenerating is one PR).
 """
 
 from typing import NamedTuple

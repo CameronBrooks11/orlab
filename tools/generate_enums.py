@@ -36,7 +36,8 @@ class OrLogLevel(Enum):
 '''
 
 
-def main():
+def render_enums():
+    """Renders _enums.py from the profile registry. Pure and deterministic."""
     data_types = sorted(set().union(*(p.flight_data_types for p in profiles.values())))
     events = sorted(set().union(*(p.flight_events for p in profiles.values())))
 
@@ -45,10 +46,15 @@ def main():
     body += "".join(f"    {n} = auto()\n" for n in data_types)
     body += "\n\nclass FlightEvent(Enum):\n"
     body += "".join(f"    {n} = auto()\n" for n in events)
+    return body
 
+
+def main():
     with open("src/orlab/_enums.py", "w") as fh:
-        fh.write(body)
-    print(f"WROTE src/orlab/_enums.py: {len(data_types)} data types, {len(events)} events")
+        fh.write(render_enums())
+    types = set().union(*(p.flight_data_types for p in profiles.values()))
+    events = set().union(*(p.flight_events for p in profiles.values()))
+    print(f"WROTE src/orlab/_enums.py: {len(types)} data types, {len(events)} events")
     return 0
 
 
