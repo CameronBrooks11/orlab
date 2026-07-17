@@ -74,6 +74,8 @@ class OpenRocketInstance:
     stays up after the block and ends with the interpreter — a later
     ``with OpenRocketInstance(...)`` on the same jar reuses it (sequential
     blocks and notebook re-runs work); a different jar raises OrlabError.
+    OpenRocket's log level is process-global: the most recently entered
+    instance's log_level wins.
     """
 
     # Optionally define the path to the JVM manually
@@ -128,8 +130,9 @@ class OpenRocketInstance:
             if _active_jar_path is None:
                 raise OrlabError(
                     "This process's JVM is running but OpenRocket startup never "
-                    "completed (an earlier attempt failed). JPype cannot restart "
-                    "a JVM — fix the cause and retry in a new process."
+                    "completed (an earlier attempt failed, or the JVM was started "
+                    "outside orlab). JPype cannot restart a JVM — retry in a new "
+                    "process."
                 )
             if requested != _active_jar_path:
                 raise OrlabError(
@@ -166,11 +169,14 @@ class OpenRocketInstance:
         try:
             self._start_openrocket()
         except Exception as e:
+            for window in jpype.java.awt.Window.getWindows():
+                window.dispose()
             raise OrlabError(
                 "OpenRocket startup failed after the JVM launched; the JVM cannot "
                 "be restarted, so retry in a new process once the cause is fixed."
             ) from e
 
+        _active_core_root = self.openrocket
         _active_jar_path = os.path.abspath(self.jar_path)
         self._warn_on_profile_drift()
         self.started = True
@@ -178,15 +184,13 @@ class OpenRocketInstance:
         return self
 
     def _start_openrocket(self):
-        """Bootstraps OpenRocket inside the (fresh) JVM."""
-        global _active_core_root
-
+        """Bootstraps OpenRocket inside the (fresh) JVM. The module globals are
+        set by __enter__ only after this succeeds."""
         # ----- Java imports -----
         # Package roots come from the version profile (OpenRocket 24.12 renamed
         # net.sf.openrocket to info.openrocket.core + info.openrocket.swing).
         self.openrocket = _jpackage(self.profile.core_root)
         self.openrocket_swing = _jpackage(self.profile.swing_root)
-        _active_core_root = self.openrocket
         # -----
 
         if self.profile.startup == "core":
