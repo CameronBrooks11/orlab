@@ -365,6 +365,81 @@ class Helper:
             warnings=tuple(str(w) for w in flight_data.getWarningSet()),
         )
 
+    def _tabular_columns(self, branch, variables):
+        """Resolves (label, java_type) columns for tabular export. Default:
+        every profile data type populated on the branch, TYPE_TIME first,
+        the rest in name order."""
+        if variables is None:
+            names = sorted(self._instance.profile.flight_data_types)
+            if "TYPE_TIME" in names:
+                names.remove("TYPE_TIME")
+                names.insert(0, "TYPE_TIME")
+            candidates = [(n, self.translate_flight_data_type(n)) for n in names]
+            return [
+                (self._column_label(jt, name), jt)
+                for name, jt in candidates
+                if branch.get(jt) is not None
+            ]
+        columns = []
+        for v in variables:
+            java_type = self.translate_flight_data_type(v)
+            name = v.name if isinstance(v, FlightDataType) else str(v)
+            columns.append((self._column_label(java_type, name), java_type))
+        return columns
+
+    @staticmethod
+    def _column_label(java_type, name: str) -> str:
+        """ "NAME (unit)" from the jar's own SI unit string; units that are
+        only whitespace/zero-width-space (OpenRocket's dimensionless marker)
+        get no suffix."""
+        unit = str(java_type.getUnitGroup().getSIUnit().getUnit())
+        if not unit.replace("\u200b", "").strip():
+            return name
+        return f"{name} ({unit})"
+
+    def get_dataframe(self, simulation, variables=None, branch_number: int = 0):
+        """The branch's timeseries as a pandas DataFrame, one column per
+        variable, labeled ``NAME (SI unit)``. Requires the ``orlab[pandas]``
+        extra; everything else in orlab works without pandas.
+
+        :param variables: FlightDataTypes or constant names; default: every
+            profile data type populated on the branch.
+        :param branch_number: Stage branch to read (0 = sustainer).
+        """
+        try:
+            import pandas  # type: ignore[import-untyped]  # optional extra, no stubs
+        except ImportError as e:
+            raise ImportError(
+                "pandas is required for get_dataframe — pip install orlab[pandas]"
+            ) from e
+        branch = simulation.getSimulatedData().getBranch(branch_number)
+        columns = self._tabular_columns(branch, variables)
+        return pandas.DataFrame(
+            {label: np.asarray(branch.get(java_type), dtype=float) for label, java_type in columns}
+        )
+
+    def export_csv(self, simulation, path, variables=None, branch_number: int = 0) -> None:
+        """Writes the branch's timeseries as UTF-8 CSV with ``NAME (SI
+        unit)`` headers — stdlib only, no pandas needed. NaN samples become
+        empty cells (``pandas.read_csv`` reads them back as NaN).
+
+        :param variables: FlightDataTypes or constant names; default: every
+            profile data type populated on the branch.
+        :param branch_number: Stage branch to read (0 = sustainer).
+        """
+        import csv
+
+        branch = simulation.getSimulatedData().getBranch(branch_number)
+        columns = self._tabular_columns(branch, variables)
+        series = [np.asarray(branch.get(java_type), dtype=float) for _, java_type in columns]
+        # newline='' and explicit utf-8: text-mode newline translation would
+        # write \r\r\n on Windows, and locale encodings choke on m/s²
+        with open(path, "w", newline="", encoding="utf-8") as fh:
+            writer = csv.writer(fh)
+            writer.writerow([label for label, _ in columns])
+            for row in zip(*series, strict=True):
+                writer.writerow(["" if math.isnan(value) else repr(float(value)) for value in row])
+
     def _branch_series(self, branch, type_name: str) -> np.ndarray:
         """A branch's series for a FlightDataType constant name as a float
         array; empty when the loaded version lacks the type (warned once per

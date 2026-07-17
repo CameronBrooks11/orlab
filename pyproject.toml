@@ -18,6 +18,10 @@ dependencies = [
     "numpy>=1.24",
 ]
 
+[project.optional-dependencies]
+pandas = ["pandas>=2.0"]
+all = ["orlab[pandas]"]
+
 [project.urls]
 Repository = "https://github.com/CameronBrooks11/orlab"
 Issues = "https://github.com/CameronBrooks11/orlab/issues"

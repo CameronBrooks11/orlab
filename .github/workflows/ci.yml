@@ -63,6 +63,16 @@ jobs:
           uv sync
           uv run pytest -q
 
+      - name: Tabular export against a real orlab[pandas] install
+        # one cell installs the built package with the extra; pandas stays
+        # out of every other environment on purpose
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
+        shell: bash
+        run: |
+          uv venv extra-venv
+          VIRTUAL_ENV="$PWD/extra-venv" uv pip install .[pandas] pytest
+          extra-venv/bin/python -m pytest -q tests/test_tabular.py
+
   integration:
     runs-on: ubuntu-latest
     timeout-minutes: 15
