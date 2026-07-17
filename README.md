@@ -70,7 +70,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
 
 1. **Install Adoptium JDK 17 LTS**
 
-   Download and install the Adoptium JDK from the [official website](https://adoptium.net/). Check the option to set / override `JAVA_HOME`, unless you have a specific reason not to in which you will need to define `MANUAL_JVM_PATH` in your code.
+   Download and install the Adoptium JDK from the [official website](https://adoptium.net/). Check the option to set / override `JAVA_HOME`, unless you have a specific reason not to in which case pass `jvm_path=` to `OpenRocketInstance`.
 
 2. **Set the `JAVA_HOME` Environment Variable**
 
