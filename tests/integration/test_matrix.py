@@ -21,8 +21,12 @@ CASES = Path(__file__).parent / "cases"
 
 
 def run_case(
-    script: str, jar: Path | None, env: dict | None = None, cwd: Path | None = None
-) -> dict:
+    script: str,
+    jar: Path | None,
+    env: dict | None = None,
+    cwd: Path | None = None,
+    return_stdout: bool = False,
+):
     cmd = [sys.executable, str(CASES / script)]
     if jar is not None:
         cmd.append(str(jar))
@@ -37,7 +41,8 @@ def run_case(
     assert proc.returncode == 0, f"{script} failed:\n{proc.stdout}\n{proc.stderr}"
     for line in proc.stdout.splitlines():
         if line.startswith("RESULT "):
-            return json.loads(line[len("RESULT ") :])
+            result = json.loads(line[len("RESULT ") :])
+            return (result, proc.stdout) if return_stdout else result
     raise AssertionError(f"{script} printed no RESULT line:\n{proc.stdout}")
 
 
@@ -264,3 +269,55 @@ def test_declarative_keys_round_trip(jar):
         assert result["readback"][key] == pytest.approx(applied), key
     assert result["readback"]["random_seed"] == 123456789
     assert result["apogee"] > 10
+
+
+def _skip_unless_2412(version):
+    if version != "24.12":
+        pytest.skip("pool cases run in the 24.12 cells only (all_jars precedent)")
+
+
+def test_pool_end_to_end(jar):
+    """Declarative dispersion, worker_fn variants (listener, Java exception,
+    Python exception), seed readback semantics, and warm reuse — against
+    real JVM workers, 2 workers, -Xmx512m pinned; statistical assertions
+    only."""
+    version, path = jar
+    _skip_unless_2412(version)
+    result, stdout = run_case("pool.py", path, return_stdout=True)
+
+    assert result["declarative_ok"] == 8
+    assert result["seeds_distinct"] == 8
+    apogees = result["apogees"]
+    assert all(20 < a < 60 for a in apogees)
+    assert apogees[0] > apogees[-1]  # more wind, lower apogee
+    assert len(result["worker_pids"]) == 2  # genuinely parallel
+    assert all(steps > 10 for steps in result["listener_steps"])
+    assert "NumberFormatException" in result["java_error_type"]
+    assert result["java_error_tb_has_stack"]  # Java stack preserved, not a PicklingError
+    assert result["python_error"] == ["ValueError", "python-side failure"]
+    assert result["reseeded_flag"] and result["reseeded_seed_recorded"]
+    assert result["warm_ok"] == 3
+    assert result["stdout_legs_ok"] == 2
+    assert "NOISE-MARKER-discard" not in stdout  # discard is clean
+    assert "NOISE-MARKER-inherit" in stdout  # inherit passes through
+
+
+def test_pool_crash_partial_preserved(jar):
+    version, path = jar
+    _skip_unless_2412(version)
+    result = run_case("pool_crash.py", path)
+    assert result["aborted"] and result["reason"] == "worker-crash"
+    assert result["partial_ok"] >= 1  # successes before the crash survive
+    assert result["hint"] and result["dead_after"]
+
+
+def test_pool_composes_with_parent_jvm_and_summaries(jar):
+    """The done-means composition: parent JVM + pool coexist, and full
+    FlightSummary objects cross the spawn boundary as payloads."""
+    version, path = jar
+    _skip_unless_2412(version)
+    result = run_case("pool_compose.py", path)
+    assert result["parent_apogee"] > 10
+    assert result["pool_ok"] == 3
+    assert result["payload_type"] == "FlightSummary"
+    assert result["windy_drifts_more"] and result["fields_finite"]

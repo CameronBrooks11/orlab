@@ -5,6 +5,7 @@ from .core.openrocket_instance import OpenRocketInstance
 from .core.simulation_listener import AbstractSimulationListener
 from .core.summary import FlightSummary
 from .jars import fetch_jar
+from .parallel import SimulationPool
 
 __all__ = [
     "AbstractSimulationListener",
@@ -15,5 +16,6 @@ __all__ = [
     "JIterator",
     "OpenRocketInstance",
     "OrLogLevel",
+    "SimulationPool",
     "fetch_jar",
 ]
