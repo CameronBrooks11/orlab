@@ -1,5 +1,7 @@
 from copy import copy
+
 import jpype
+
 from .openrocket_instance import active_core_root
 
 __all__ = ["AbstractSimulationListener"]

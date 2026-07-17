@@ -1,5 +1,5 @@
 import zipfile
-from typing import NamedTuple, Tuple
+from typing import NamedTuple
 
 __all__ = ["read_or_version", "parse_version", "select_roots", "PackageRoots"]
 
@@ -18,16 +18,15 @@ def read_or_version(jar_path: str) -> str:
     (present at the zip root in every release from 15.03 through 24.12),
     without starting a JVM.
     """
-    with zipfile.ZipFile(jar_path) as jar:
-        with jar.open("build.properties") as fh:
-            for raw in fh.read().decode("utf-8", errors="replace").splitlines():
-                line = raw.strip()
-                if line.startswith("build.version="):
-                    return line.split("=", 1)[1].strip()
+    with zipfile.ZipFile(jar_path) as jar, jar.open("build.properties") as fh:
+        for raw in fh.read().decode("utf-8", errors="replace").splitlines():
+            line = raw.strip()
+            if line.startswith("build.version="):
+                return line.split("=", 1)[1].strip()
     raise ValueError(f"No build.version found in {jar_path} build.properties")
 
 
-def parse_version(version: str) -> Tuple[int, int]:
+def parse_version(version: str) -> tuple[int, int]:
     """Parses the leading numeric components of an OpenRocket version string.
     '23.09' -> (23, 9); '24.12.RC.01' -> (24, 12).
     """

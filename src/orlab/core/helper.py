@@ -1,10 +1,12 @@
+from collections.abc import Iterable
+
 import jpype
 import numpy as np
-from typing import Union, List, Iterable, Dict, Optional
+
 from .._enums import FlightDataType, FlightEvent
+from .jiterator import JIterator
 from .openrocket_instance import OpenRocketInstance
 from .simulation_listener import AbstractSimulationListener
-from .jiterator import JIterator
 
 __all__ = ["Helper"]
 
@@ -37,7 +39,7 @@ class Helper:
         saver = self.openrocket.file.GeneralRocketSaver()
         saver.save(or_java_file, doc)
 
-    def run_simulation(self, sim, listeners: Optional[List[AbstractSimulationListener]] = None):
+    def run_simulation(self, sim, listeners: list[AbstractSimulationListener] | None = None):
         """This is a wrapper to the Simulation.simulate() for running a simulation
         The optional listeners parameter is a sequence of objects which extend orl.AbstractSimulationListener.
         """
@@ -65,7 +67,7 @@ class Helper:
         sim.getOptions().randomizeSeed()  # Need to do this otherwise exact same numbers will be generated for each identical run
         sim.simulate(listener_array)
 
-    def translate_flight_data_type(self, flight_data_type: Union[FlightDataType, str]):
+    def translate_flight_data_type(self, flight_data_type: FlightDataType | str):
         if isinstance(flight_data_type, FlightDataType):
             name = flight_data_type.name
         elif isinstance(flight_data_type, str):
@@ -76,8 +78,8 @@ class Helper:
         return getattr(self.openrocket.simulation.FlightDataType, name)
 
     def get_timeseries(
-        self, simulation, variables: Iterable[Union[FlightDataType, str]], branch_number=0
-    ) -> Dict[Union[FlightDataType, str], np.ndarray]:
+        self, simulation, variables: Iterable[FlightDataType | str], branch_number=0
+    ) -> dict[FlightDataType | str, np.ndarray]:
         """
         Gets a dictionary of timeseries data (as numpy arrays) from a simulation given specific variable names.
 
@@ -88,15 +90,15 @@ class Helper:
         """
 
         branch = simulation.getSimulatedData().getBranch(branch_number)
-        output: Dict[Union[FlightDataType, str], np.ndarray] = {}
+        output: dict[FlightDataType | str, np.ndarray] = {}
         for v in variables:
             output[v] = np.array(branch.get(self.translate_flight_data_type(v)))
 
         return output
 
     def get_final_values(
-        self, simulation, variables: Iterable[Union[FlightDataType, str]], branch_number=0
-    ) -> Dict[Union[FlightDataType, str], float]:
+        self, simulation, variables: Iterable[FlightDataType | str], branch_number=0
+    ) -> dict[FlightDataType | str, float]:
         """
         Gets a the final value in the time series from a simulation given variable names.
 
@@ -107,7 +109,7 @@ class Helper:
         """
 
         branch = simulation.getSimulatedData().getBranch(branch_number)
-        output: Dict[Union[FlightDataType, str], float] = {}
+        output: dict[FlightDataType | str, float] = {}
         for v in variables:
             output[v] = branch.get(self.translate_flight_data_type(v))[-1]
 
@@ -118,13 +120,13 @@ class Helper:
             getattr(self.openrocket.simulation.FlightEvent.Type, x.name): x for x in FlightEvent
         }[flight_event]
 
-    def get_events(self, simulation) -> Dict[FlightEvent, List[float]]:
+    def get_events(self, simulation) -> dict[FlightEvent, list[float]]:
         """Returns a dictionary of all the flight events in a given simulation.
         Key is FlightEvent and value is a list of all the times at which the event occurs.
         """
         branch = simulation.getSimulatedData().getBranch(0)
 
-        output: Dict[FlightEvent, List[float]] = {}
+        output: dict[FlightEvent, list[float]] = {}
         for ev in branch.getEvents():
             type = self.translate_flight_event(ev.getType())
             if type in output:
@@ -145,7 +147,7 @@ class Helper:
                 return component
         raise ValueError(root.toString() + " has no component named " + name)
 
-    def get_all_components(self, root) -> List[jpype.JObject]:
+    def get_all_components(self, root) -> list[jpype.JObject]:
         """Returns a list of all rocket components in the loaded OpenRocket file.
 
         :param root: The root RocketComponent (usually obtained from the simulation)

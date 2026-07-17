@@ -1,8 +1,10 @@
-import os
-import numpy as np
-import orlab
-from random import gauss
 import math
+import os
+from random import gauss
+
+import numpy as np
+
+import orlab
 
 
 class LandingPoints(list):
@@ -48,14 +50,10 @@ class LandingPoints(list):
 
     def print_stats(self):
         print(
-            "Rocket landing zone %3.2f m +- %3.2f m bearing %3.2f deg +- %3.4f deg from launch site. Based on %i simulations."
-            % (
-                np.mean(self.ranges),
-                np.std(self.ranges),
-                np.degrees(np.mean(self.bearings)),
-                np.degrees(np.std(self.bearings)),
-                len(self),
-            )
+            f"Rocket landing zone {np.mean(self.ranges):3.2f} m +- {np.std(self.ranges):3.2f} m "
+            f"bearing {np.degrees(np.mean(self.bearings)):3.2f} deg "
+            f"+- {np.degrees(np.std(self.bearings)):3.4f} deg from launch site. "
+            f"Based on {len(self)} simulations."
         )
 
 

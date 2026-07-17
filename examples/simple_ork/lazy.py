@@ -1,8 +1,9 @@
-import os
 import math
+import os
+
 import numpy as np
-from scipy.optimize import fmin
 from matplotlib import pyplot as plt
+from scipy.optimize import fmin
 
 import orlab
 from orlab import FlightDataType
@@ -39,7 +40,7 @@ with orlab.OpenRocketInstance() as instance:
     angles.sort()
 
     # Calculate all the curves for plotting
-    data_runs = dict()
+    data_runs = {}
     for ang in angles:
         data_runs[ang] = simulate_at_angle(ang, sim)
 
@@ -50,7 +51,7 @@ with orlab.OpenRocketInstance() as instance:
         ax1.plot(
             data[FlightDataType.TYPE_POSITION_X],
             data[FlightDataType.TYPE_ALTITUDE],  # X is upwind for simple.ork
-            label="%3.1f$^\circ$" % ang,
+            label=rf"{ang:3.1f}$^\circ$",
             linestyle="-" if ang == optimal else "--",
         )
 

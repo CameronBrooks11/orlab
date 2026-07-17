@@ -18,7 +18,7 @@ def test_read_or_version(tmp_path):
 
 
 def test_read_or_version_strips_whitespace(tmp_path):
-    jar = _jar_with_properties(tmp_path, "build.version = 23.09 \n".replace(" = ", "= "))
+    jar = _jar_with_properties(tmp_path, "build.version= 23.09 \n")
     assert read_or_version(jar) == "23.09"
 
 

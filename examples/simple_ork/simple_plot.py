@@ -62,7 +62,7 @@ with orlab.OpenRocketInstance() as instance:
                 xycoords="data",
                 xytext=(20, 0),
                 textcoords="offset points",
-                arrowprops=dict(arrowstyle="->", connectionstyle="arc3"),
+                arrowprops={"arrowstyle": "->", "connectionstyle": "arc3"},
             )
 
     ax1.grid(True)

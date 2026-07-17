@@ -118,3 +118,4 @@ venv/
 
 # uv-managed virtualenv
 .venv/
+.ruff_cache/

@@ -37,6 +37,8 @@ Run `just check && just test` before every commit.
 ## Conventions
 
 - Conventional Commits; PR per slice, linked to its issue; never bypass hooks.
+- `pre-commit` itself is machine-managed tooling (installed system-wide, see
+  workstation-configs), not a project dependency — enable with `pre-commit install`.
 - Releases: bump `version` in `pyproject.toml`, tag `vX.Y.Z`, create a GitHub
   release — `release.yml` publishes to PyPI via Trusted Publishing (the
   workflow refuses version/tag mismatches and pre-release strings).

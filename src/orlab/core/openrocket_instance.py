@@ -1,7 +1,9 @@
-import os
-import jpype
 import logging
-from typing import Any, Union
+import os
+from typing import Any
+
+import jpype
+
 from .._enums import OrLogLevel
 from ..utils.utils import _get_private_field
 from .version import read_or_version, select_roots
@@ -48,9 +50,7 @@ class OpenRocketInstance:
     # MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-21.0.5.11-hotspot\bin\server\jvm.dll'
     # MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot\bin\server\jvm.dll'
 
-    def __init__(
-        self, jar_path: str = CLASSPATH, log_level: Union[OrLogLevel, str] = OrLogLevel.ERROR
-    ):
+    def __init__(self, jar_path: str = CLASSPATH, log_level: OrLogLevel | str = OrLogLevel.ERROR):
         """jar_path is the full path of the OpenRocket .jar file to use
         log_level can be either OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL
         """

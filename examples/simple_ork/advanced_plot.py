@@ -1,6 +1,7 @@
 # advanced_plot.py
 
 import os
+
 from matplotlib import pyplot as plt
 
 import orlab
