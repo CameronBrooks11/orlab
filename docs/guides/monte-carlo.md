@@ -22,7 +22,7 @@ workers start via multiprocessing's *spawn* method (the only start method
 that is safe with a JVM and identical on every platform), and spawn
 re-imports your script in each worker.
 
-Each task is a mapping of [declarative keys](../api.md#declarative-simulation-options)
+Each task is a mapping of [declarative keys](../api.md#parallel-running-and-declarative-options)
 — the `SimulationOptions` knobs verified to behave identically on every
 supported OpenRocket version — plus an optional reserved `seed`. The
 default result payload is the core summary fields (apogee, max

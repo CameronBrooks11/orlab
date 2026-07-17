@@ -1,9 +1,9 @@
 # API reference
 
-The public surface is the nine names importable from `orlab`, plus the
-exception types in `orlab.errors`, the jar utilities in `orlab.jars`, and
-the declarative simulation-options contract in `orlab.parallel`.
-Everything else is internal.
+The public surface is the ten names importable from `orlab`, plus the
+exception types in `orlab.errors`, the jar utilities in `orlab.jars`, the
+parallel-running machinery in `orlab.parallel`, and the dispersion
+listeners in `orlab.listeners`. Everything else is internal.
 
 ## OpenRocketInstance
 
@@ -55,9 +55,13 @@ Everything else is internal.
 across all supported OpenRocket versions; availability on the loaded version
 is enforced at translation time with `UnsupportedFlightDataType`.
 
-## Declarative simulation options
+## Parallel running and declarative options
 
 ::: orlab.parallel
+
+## Dispersion listeners
+
+::: orlab.listeners
 
 ## Errors
 
