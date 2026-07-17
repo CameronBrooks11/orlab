@@ -30,6 +30,7 @@ jobs:
 
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     permissions:
       contents: read
     strategy:
@@ -55,6 +56,9 @@ jobs:
           enable-cache: true
 
       - name: Run unit tests
+        # bash on all platforms: pwsh would not fail the step on a mid-script
+        # `uv sync` error
+        shell: bash
         run: |
           uv sync
           uv run pytest -q
