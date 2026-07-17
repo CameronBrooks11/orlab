@@ -49,10 +49,14 @@ class LandingPoints(list):
                 self.append(lp)
 
     def print_stats(self):
+        # Bearings are angles: average them as unit vectors, not raw numbers
+        # (the arithmetic mean of 1 deg and 359 deg is 180 deg, not 0 deg).
+        mean_bearing = math.atan2(
+            np.mean(np.sin(self.bearings)), np.mean(np.cos(self.bearings))
+        ) % (2 * math.pi)
         print(
             f"Rocket landing zone {np.mean(self.ranges):3.2f} m +- {np.std(self.ranges):3.2f} m "
-            f"bearing {np.degrees(np.mean(self.bearings)):3.2f} deg "
-            f"+- {np.degrees(np.std(self.bearings)):3.4f} deg from launch site. "
+            f"bearing {math.degrees(mean_bearing):3.2f} deg from launch site. "
             f"Based on {len(self)} simulations."
         )
 
@@ -98,7 +102,7 @@ def range_flat(start, end):
 def bearing_flat(start, end):
     dy = (end.getLatitudeDeg() - start.getLatitudeDeg()) * METERS_PER_DEGREE_LATITUDE
     dx = (end.getLongitudeDeg() - start.getLongitudeDeg()) * METERS_PER_DEGREE_LONGITUDE_EQUATOR
-    return math.pi / 2 - math.atan(dy / dx)
+    return math.atan2(dx, dy) % (2 * math.pi)  # bearing from north, clockwise
 
 
 if __name__ == "__main__":

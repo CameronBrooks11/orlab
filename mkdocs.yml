@@ -38,6 +38,10 @@ plugins:
 nav:
   - Home: index.md
   - Getting started: getting-started.md
+  - Guides:
+      - Simulation listeners: guides/listeners.md
+      - Monte-carlo studies: guides/monte-carlo.md
+      - Working across versions: guides/multi-version.md
   - API reference: api.md
   - Maintainers: maintainers.md
 
