@@ -45,6 +45,28 @@ print(table[["apogee", "landing_distance", "landing_bearing_deg"]].describe())
 [`examples/simple_ork/monte_carlo.py`](https://github.com/CameronBrooks11/orlab/blob/main/examples/simple_ork/monte_carlo.py)
 is this pattern end to end.
 
+## Timeseries tables
+
+The full per-sample record — not just the scalar summary — exports in one
+call. `export_csv` is stdlib-only; `get_dataframe` needs the
+`orlab[pandas]` extra (`pip install 'orlab[pandas]'`; everything else in
+orlab works without pandas):
+
+```python
+orl.export_csv(sim, "flight.csv")   # UTF-8, "NAME (SI unit)" headers
+frame = orl.get_dataframe(sim)      # same columns as a pandas DataFrame
+print(frame[["TYPE_TIME (s)", "TYPE_ALTITUDE (m)"]].tail())
+```
+
+By default every profile data type populated on the branch is included,
+`TYPE_TIME` first; pass `variables=[...]` (enum members or constant-name
+strings) to select and order columns yourself. Column labels carry the
+jar's own SI units (`TYPE_ACCELERATION_TOTAL (m/s²)`); dimensionless
+quantities like `TYPE_MACH_NUMBER` get no suffix. NaN samples become empty
+CSV cells, which `pandas.read_csv` reads back as NaN — the round trip is
+lossless. Simulation warnings are not per-sample data and have no column:
+take them from `get_summary(sim).warnings`.
+
 ## Field semantics worth knowing
 
 - **Missing means NaN, never None.** A booster branch has no launch-rod

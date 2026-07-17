@@ -28,6 +28,14 @@ reconstructed from the git log.
 - The profile contract manifest now checks the FlightData summary getters
   and branch accessors on every profile regeneration, and the monthly
   canary also runs the summary case against the newest upstream release.
+- Tabular export: `Helper.export_csv(sim, path)` writes the branch's full
+  timeseries as UTF-8 CSV (stdlib-only; NaN as empty cells, lossless
+  through `pandas.read_csv`), and `Helper.get_dataframe(sim)` returns the
+  same columns as a pandas DataFrame. Column labels carry the jar's own SI
+  units (`TYPE_ACCELERATION_TOTAL (m/s²)`); dimensionless types get no
+  suffix. pandas ships as orlab's first optional extra —
+  `pip install orlab[pandas]` (or `orlab[all]`) — and is lazy-imported
+  with an error naming the extra; nothing else in orlab needs it.
 
 ## [0.6.0] — 2026-07-17
 

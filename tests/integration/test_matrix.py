@@ -222,6 +222,26 @@ def test_summary_multistage(jar):
         assert math.isnan(booster2["velocity_off_rod"])
 
 
+def test_tabular_export(jar):
+    """export_csv default columns against a real flight: pinned UTF-8 unit
+    headers, row count equal to the series length, NaN stability as empty
+    cells, TYPE_TIME leading."""
+    version, path = jar
+    result = run_case("tabular.py", path)
+    header = result["header"]
+
+    assert header[0] == "TYPE_TIME (s)"
+    assert "TYPE_ALTITUDE (m)" in header
+    assert "TYPE_ACCELERATION_TOTAL (m/s²)" in header
+    assert "TYPE_MACH_NUMBER" in header  # dimensionless: no unit suffix
+    assert "TYPE_STABILITY" in header
+    assert not any("\u200b" in label for label in header)
+    assert result["rows"] == result["time_samples"] > 100
+    assert result["first_stability_cell"] == ""  # pre-liftoff stability is NaN
+    assert result["any_empty_stability"]
+    assert float(result["last_time_cell"]) > 10  # values round-trip via float()
+
+
 def test_cross_version_apogee_tolerance(all_jars):
     """Same rocket, zero wind: apogee must agree across every version within a
     band. Profiles catch name drift; only result comparison catches semantic

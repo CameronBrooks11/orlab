@@ -8,6 +8,9 @@
     pip install orlab
     ```
 
+    `pip install 'orlab[pandas]'` adds DataFrame export
+    (`Helper.get_dataframe`); everything else works without it.
+
 2. **A JDK** — 17 or 21, [Adoptium Temurin](https://adoptium.net/) tested.
    Let the installer set `JAVA_HOME`; JPype finds the JVM through it. If it
    can't, either export `JAVA_HOME` yourself or pass
