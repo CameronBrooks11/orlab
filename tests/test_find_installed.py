@@ -143,15 +143,14 @@ def test_exec_parsing_tolerates_garbage(value):
 def test_instance_accepts_pathlike_jvm_path(tmp_path):
     """find_installed returns jvm as a Path; jpype's startJVM rejects
     PathLike, so OpenRocketInstance must coerce to str at construction."""
-    from pathlib import Path
-
     from orlab import OpenRocketInstance
 
     jar = tmp_path / "fake.jar"
     _write_jar(jar)
-    instance = OpenRocketInstance(str(jar), jvm_path=Path("/some/libjvm.so"))
-    assert instance.jvm_path == "/some/libjvm.so"
-    assert isinstance(instance.jvm_path, str)
+    jvm = tmp_path / "libjvm.so"  # a Path, as find_installed returns
+    instance = OpenRocketInstance(str(jar), jvm_path=jvm)
+    assert instance.jvm_path == str(jvm)
+    assert type(instance.jvm_path) is str
 
 
 def test_chain_never_calls_discovery(tmp_path, monkeypatch):
