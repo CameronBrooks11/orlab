@@ -1,49 +1,21 @@
-# How to Upload to Test PyPI and PyPI
+# Releasing to PyPI
 
-This guide explains how to upload your Python package to Test PyPI (for testing) and then to the official PyPI.
+Releases are published automatically by the `release.yml` workflow using PyPI
+[Trusted Publishing](https://docs.pypi.org/trusted-publishers/) — no tokens or
+manual uploads.
 
-## Steps
+## Release procedure
 
-1. **Install Required Tools**
-   ```
-   pip install build twine
-   ```
+1. Bump `version` in `pyproject.toml` on `main` (remove any `.dev` suffix).
+2. Tag and create a GitHub release: `gh release create vX.Y.Z --title ... --notes ...`
+3. The workflow builds with `uv build`, verifies the dist version matches the
+   tag, and publishes. Pre-release versions (`.dev`, `rc`, `a`, `b`) are refused.
 
-2. **Build the Distribution Files**
-   ```
-   python -m build
-   ```
+## Manual fallback
 
-   This creates a `dist/` directory with `.tar.gz` and `.whl` files.
+`workflow_dispatch` on any ref containing the workflow file, with the exact
+`expected_version` as input. For a fully local build (no publish):
 
-3. **Upload to Test PyPI**
-   ```
-   twine upload --repository testpypi dist/*
-   ```
-
-   Use your Test PyPI credentials or API token. You can test the package with:
-   ```
-   pip install -i https://test.pypi.org/simple/ your-package-name
-   ```
-
-4. **Upload to PyPI**
-   After testing, upload to the official PyPI:
-   ```
-   twine upload dist/*
-   ```
-
-   Use your PyPI credentials or API token.
-
-5. **Verify Installation**
-   Install the package from PyPI to ensure it works:
-   ```
-   pip install your-package-name
-   ```
-
-## Notes
-- Use a [PyPI API token](https://pypi.org/help/#apitoken) for secure uploads.
-- Ensure `README.md` renders correctly on PyPI by testing locally:
-  ```
-  pip install readme_renderer
-  python setup.py check -r -s
-  ```
+```
+uv build   # produces dist/*.tar.gz and dist/*.whl
+```

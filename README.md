@@ -26,7 +26,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
 - **Adoptium JDK 17 LTS** (or higher?)
   - [Download Adoptium JDK](https://adoptium.net/)
   - Other JDK releases (i.e. 22) have been tested and work, but not thoroughly.
-- **Python** version **3.6** or higher
+- **Python** version **3.10** or higher
 
 ## Installation
 
@@ -129,7 +129,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
 
 ## Usage
 
-After installation and setup, you can start using **orlab** to interact with OpenRocket. Refer to the `examples/` directory for sample scripts demonstrating various functionalities.
+After installation and setup, you can start using **orlab** to interact with OpenRocket. Refer to the `examples/` directory for sample scripts demonstrating various functionalities. The package must be installed (`pip install orlab`, or `pip install -e .` from a clone) before running them — the source now lives under `src/` and is not importable from the repository root.
 
 For more detailed information and advanced usage, consult the [OpenRocket Wiki on Scripting with Python and JPype](https://github.com/openrocket/openrocket/wiki/Scripting-with-Python-and-JPype).
 

@@ -4,7 +4,7 @@ version = "0.4.0.dev0"
 description = "Interact and script with OpenRocket from Python via JPype, with enhanced capabilities for simulations and computational workflows"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "GPL-2.0-only"}
+license = "GPL-2.0-only"
 authors = [
     {name = "Cameron Brooks", email = "cambrooks3393@gmail.com"}
 ]
@@ -35,14 +35,6 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["src/orlab"]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-
 [tool.ruff]
 target-version = "py310"
 line-length = 100
-
-[tool.mypy]
-python_version = "3.10"
-packages = ["orlab"]
-mypy_path = "src"
