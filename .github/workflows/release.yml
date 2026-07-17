@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      expected_version:
+        description: "Exact version the dist must carry (e.g. 0.3.0) — guards against publishing the wrong ref"
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Guard built version against the intended release
+        run: |
+          set -eu
+          version=$(ls dist/*.tar.gz | sed -E 's|.*/orlab-(.+)\.tar\.gz|\1|')
+          echo "built: $version"
+          case "${{ github.event_name }}" in
+            release)
+              want="${GITHUB_REF_NAME#v}" ;;
+            workflow_dispatch)
+              want="${{ inputs.expected_version }}" ;;
+          esac
+          if [ "$version" != "$want" ]; then
+            echo "::error::built version '$version' does not match intended release '$want'"
+            exit 1
+          fi
+          case "$version" in
+            *.dev*|*rc*|*a[0-9]*|*b[0-9]*)
+              echo "::error::refusing to publish pre-release version '$version' (build a release ref)"
+              exit 1 ;;
+          esac
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    environment: pypi
+    permissions:
+      id-token: write # PyPI Trusted Publishing (OIDC)
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
