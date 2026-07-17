@@ -18,6 +18,8 @@ Everything runs through `uv` via the `justfile`:
 - `just fmt` / `just lint` — ruff format / lint with autofixes
 - `just check` — CI-equivalent gate: format check + lint + mypy
 - `just test` — unit tests (no OpenRocket jar or JVM needed)
+- `just test-integration` — real-jar matrix (downloads pinned OpenRocket jars
+  on first run; `ORLAB_TEST_VERSION=24.12` limits to one version)
 
 Run `just check && just test` before every commit.
 

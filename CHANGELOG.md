@@ -20,6 +20,14 @@ reconstructed from the git log.
   needed, and no private-field reflection on that path.
 - `orlab.errors` with `OrlabError`, `UnsupportedFlightDataType` and
   `UnsupportedOpenRocketVersion`.
+- Per-version integration harness (`just test-integration`):
+  subprocess-per-version cases against sha256-pinned OpenRocket jars
+  (downloaded on demand) covering flight sanity, the enum surface against the
+  profile, warning/abort events, listener exception propagation, and
+  cross-version apogee agreement. CI runs the full matrix — all four
+  OpenRocket versions on JDK 17 and 21, no display server — and a monthly
+  canary runs the newest upstream release against the newest profile, opening
+  an issue on failure.
 
 ### Changed
 

@@ -50,3 +50,43 @@ jobs:
         run: |
           uv sync
           uv run pytest -q
+
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # tested tier: every profiled OpenRocket version on both supported JDKs
+        or-version: ["15.03", "22.02", "23.09", "24.12"]
+        java-version: ["17", "21"]
+    env:
+      ORLAB_TEST_VERSION: ${{ matrix.or-version }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install JDK
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+
+      - name: Cache OpenRocket jars
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/orlab-jars
+          # conftest hash: a changed sha256 pin must not restore the stale jar
+          # (cache entries are immutable per key)
+          key: orlab-jars-${{ matrix.or-version }}-${{ hashFiles('tests/integration/conftest.py') }}
+
+      - name: Run integration matrix
+        run: |
+          uv sync
+          uv run pytest -q -m integration tests/integration

@@ -1,0 +1,68 @@
+name: Canary
+
+# Monthly: run the newest OpenRocket release against the newest checked-in
+# profile (nearest-older fallback). Catches upstream drift between releases
+# of orlab; failure opens a tracked issue.
+
+on:
+  schedule:
+    - cron: "17 5 3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Install JDK
+        uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4.8.0
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          enable-cache: true
+
+      - name: Run newest OpenRocket release against current profiles
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(gh api repos/openrocket/openrocket/releases/latest --jq .tag_name)
+          VERSION=${TAG#release-}
+          echo "Newest OpenRocket release: $VERSION"
+          curl -sSfL --retry 3 -o "OpenRocket-$VERSION.jar" \
+            "https://github.com/openrocket/openrocket/releases/download/$TAG/OpenRocket-$VERSION.jar"
+          uv sync
+          uv run python tests/integration/cases/happy.py "OpenRocket-$VERSION.jar" | tee canary.out
+          grep '^RESULT ' canary.out | sed 's/^RESULT //' > result.json
+          python3 - <<'EOF'
+          import json
+
+          result = json.load(open("result.json"))
+          assert result["apogee"] > 10, result
+          assert {"LAUNCH", "APOGEE", "GROUND_HIT"} <= set(result["events"]), result
+          if result["extra_types"] or result["extra_events"]:
+              print(
+                  "NOTE: jar exposes constants beyond the fallback profile "
+                  f"(regeneration due): {result['extra_types']} {result['extra_events']}"
+              )
+          print("CANARY OK:", result["version"], "apogee", result["apogee"])
+          EOF
+
+      - name: Open an issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -z "$(gh issue list --label canary --state open --json number --jq '.[0]')" ]; then
+            gh issue create --label canary \
+              --title "canary: newest OpenRocket release fails against current profiles" \
+              --body "The monthly canary run failed: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID — likely upstream drift requiring a profile regeneration (tools/generate_profile.py) or a contract fix."
+          fi
