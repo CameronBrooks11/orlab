@@ -115,3 +115,6 @@ OpenRocket*.jar
 
 venv/
 .idea/
+
+# uv-managed virtualenv
+.venv/
