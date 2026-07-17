@@ -90,7 +90,9 @@ def test_enums_match_profile_union():
 def test_enums_file_is_regeneration_identical():
     """The committed _enums.py is byte-identical to what the generator renders."""
     generate_enums = _load_tool("generate_enums")
-    assert generate_enums.render_enums() == (REPO / "src" / "orlab" / "_enums.py").read_text(encoding="utf-8")
+    assert generate_enums.render_enums() == (REPO / "src" / "orlab" / "_enums.py").read_text(
+        encoding="utf-8"
+    )
 
 
 def test_profile_files_are_regeneration_identical():
