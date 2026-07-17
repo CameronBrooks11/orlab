@@ -1,7 +1,8 @@
 # API reference
 
-The public surface is the seven names importable from `orlab`, plus the
-exception types in `orlab.errors`. Everything else is internal.
+The public surface is the eight names importable from `orlab`, plus the
+exception types in `orlab.errors` and the jar utilities in `orlab.jars`.
+Everything else is internal.
 
 ## OpenRocketInstance
 
@@ -18,6 +19,12 @@ exception types in `orlab.errors`. Everything else is internal.
 ## JIterator
 
 ::: orlab.JIterator
+
+## Jar management
+
+::: orlab.jars.fetch_jar
+
+::: orlab.jars.jar_cache_dir
 
 ## Enums
 

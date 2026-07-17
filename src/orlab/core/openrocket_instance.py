@@ -8,10 +8,12 @@ from typing import Any
 import jpype
 
 from .._enums import OrLogLevel
-from ..errors import NotAnOpenRocketJar, OrlabError
+from .._pins import PINNED_SHA256
+from ..errors import NotAnOpenRocketJar, OrlabError, UnsupportedOpenRocketVersion
+from ..jars import _cached_jar
 from ..profiles import get_profile
 from ..utils.utils import _get_private_field
-from .version import read_or_version
+from .version import parse_version, read_or_version
 
 __all__ = ["OpenRocketInstance"]
 
@@ -57,17 +59,62 @@ def reflect_live_constants(core_pkg) -> tuple[set, set]:
 logger = logging.getLogger(__name__)
 
 
-def _default_jar_path() -> str:
-    """Resolved at instantiation time (not import time): ORLAB_JAR, then the
-    first existing jar on the legacy CLASSPATH (which may hold a separator-
-    joined list), then a cwd-relative fallback."""
+def _newest_cwd_jar() -> str | None:
+    """The newest OpenRocket-*.jar in the current directory whose filename
+    version has an exact checked-in profile. Restricting to exact profiles
+    keeps a stray 26.xx-SNAPSHOT build from outranking a supported release;
+    such jars still run when named explicitly."""
+    best: tuple[tuple[int, int], str] | None = None
+    for name in os.listdir("."):
+        if not (name.startswith("OpenRocket-") and name.endswith(".jar") and os.path.isfile(name)):
+            continue
+        version = name[len("OpenRocket-") : -len(".jar")]
+        try:
+            parsed = parse_version(version)
+            _, exact = get_profile(version)
+        except (ValueError, UnsupportedOpenRocketVersion):
+            continue
+        # (parsed, name) tie-break keeps same-version filenames deterministic
+        if exact and (best is None or (parsed, name) > (best[0], best[1])):
+            best = (parsed, name)
+    return best[1] if best else None
+
+
+def _newest_cached_jar() -> str | None:
+    """The newest pinned version already in the fetch_jar cache, re-verified.
+    Never downloads."""
+    for version in sorted(PINNED_SHA256, key=parse_version, reverse=True):
+        path = _cached_jar(version)
+        if path is not None:
+            return str(path)
+    return None
+
+
+def _resolve_default_jar() -> tuple[str, str]:
+    """Resolved at instantiation time (not import time), network-free, first
+    hit wins. Returns (path, source) so ``python -m orlab which`` can say
+    where the jar came from."""
     jar = os.environ.get("ORLAB_JAR")
     if jar:
-        return jar
+        return jar, "ORLAB_JAR"
     for entry in os.environ.get("CLASSPATH", "").split(os.pathsep):
         if entry.endswith(".jar") and os.path.exists(entry):
-            return entry
-    return "OpenRocket-23.09.jar"
+            return entry, "CLASSPATH"
+    cwd_jar = _newest_cwd_jar()
+    if cwd_jar is not None:
+        return cwd_jar, "current directory"
+    cached = _newest_cached_jar()
+    if cached is not None:
+        logger.warning("using cached jar %s (no ORLAB_JAR or local jar set)", cached)
+        return cached, "orlab jar cache"
+    raise FileNotFoundError(
+        "No OpenRocket jar found: set ORLAB_JAR, pass jar_path=, or fetch "
+        "one into the cache with orlab.fetch_jar() / `python -m orlab fetch`"
+    )
+
+
+def _default_jar_path() -> str:
+    return _resolve_default_jar()[0]
 
 
 class OpenRocketInstance:
@@ -93,7 +140,9 @@ class OpenRocketInstance:
         jvm_args: Sequence[str] = (),
     ):
         """jar_path is the full path of the OpenRocket .jar file to use;
-        defaults to $ORLAB_JAR, then $CLASSPATH, then ./OpenRocket-23.09.jar.
+        defaults to $ORLAB_JAR, then $CLASSPATH, then the newest supported
+        OpenRocket-*.jar in the current directory, then the newest jar in
+        the orlab.fetch_jar cache (verified, never downloading).
         log_level can be either OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
         jvm_path selects the JVM library explicitly (default: JPype's
         auto-detection via JAVA_HOME). jvm_args are appended to the JVM
@@ -107,7 +156,8 @@ class OpenRocketInstance:
         if not os.path.exists(jar_path):
             raise FileNotFoundError(
                 f"Jar file {os.path.abspath(jar_path)} does not exist "
-                "(pass jar_path or set ORLAB_JAR)"
+                "(pass jar_path, set ORLAB_JAR, or fetch one: "
+                "`python -m orlab fetch`)"
             )
         self.jar_path = jar_path
         try:

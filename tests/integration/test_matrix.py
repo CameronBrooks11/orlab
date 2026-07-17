@@ -7,6 +7,8 @@ Run with: just test-integration          (all versions)
 """
 
 import json
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -18,12 +20,19 @@ pytestmark = pytest.mark.integration
 CASES = Path(__file__).parent / "cases"
 
 
-def run_case(script: str, jar: Path) -> dict:
+def run_case(
+    script: str, jar: Path | None, env: dict | None = None, cwd: Path | None = None
+) -> dict:
+    cmd = [sys.executable, str(CASES / script)]
+    if jar is not None:
+        cmd.append(str(jar))
     proc = subprocess.run(
-        [sys.executable, str(CASES / script), str(jar)],
+        cmd,
         capture_output=True,
         text=True,
         timeout=600,
+        env=env,
+        cwd=cwd,
     )
     assert proc.returncode == 0, f"{script} failed:\n{proc.stdout}\n{proc.stderr}"
     for line in proc.stdout.splitlines():
@@ -79,6 +88,24 @@ def test_second_instance_reuses_jvm(jar):
     assert result["second_apogee"] > 10
     assert result["conflict"] is not None
     assert "already running" in result["conflict"]
+
+
+def test_zero_config_boot_from_cache(jar, tmp_path):
+    """OpenRocketInstance() with no configuration at all: the resolution
+    chain must find (and re-verify) the jar in the fetch_jar cache. The tmp
+    cache holds only this cell's jar — copied, so the shared cache stays
+    untouched — and cwd is empty."""
+    version, path = jar
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    shutil.copy2(path, cache / path.name)
+    env = {k: v for k, v in os.environ.items() if k not in ("ORLAB_JAR", "CLASSPATH")}
+    env["ORLAB_JAR_CACHE"] = str(cache)
+
+    result = run_case("zero_config.py", None, env=env, cwd=tmp_path)
+    assert result["version"] == version
+    assert Path(result["jar"]) == cache / path.name
+    assert result["apogee"] > 10
 
 
 def test_cross_version_apogee_tolerance(all_jars):

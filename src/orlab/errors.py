@@ -1,6 +1,7 @@
 """orlab exception types."""
 
 __all__ = [
+    "JarVerificationError",
     "NotAnOpenRocketJar",
     "OrlabError",
     "UnsupportedFlightDataType",
@@ -10,6 +11,10 @@ __all__ = [
 
 class OrlabError(Exception):
     """Base class for all orlab errors."""
+
+
+class JarVerificationError(OrlabError):
+    """A jar's sha256 could not be verified (no pin, or a digest mismatch)."""
 
 
 class NotAnOpenRocketJar(OrlabError):

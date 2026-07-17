@@ -9,6 +9,7 @@ def test_public_surface_stable():
         "JIterator",
         "OpenRocketInstance",
         "OrLogLevel",
+        "fetch_jar",
     ]
     for name in orlab.__all__:
         assert getattr(orlab, name) is not None
@@ -19,6 +20,7 @@ def test_errors_surface_stable():
     import orlab.errors
 
     assert sorted(orlab.errors.__all__) == [
+        "JarVerificationError",
         "NotAnOpenRocketJar",
         "OrlabError",
         "UnsupportedFlightDataType",
@@ -26,6 +28,14 @@ def test_errors_surface_stable():
     ]
     for name in orlab.errors.__all__:
         assert issubclass(getattr(orlab.errors, name), Exception)
+
+
+def test_jars_surface_stable():
+    import orlab.jars
+
+    assert sorted(orlab.jars.__all__) == ["fetch_jar", "jar_cache_dir"]
+    for name in orlab.jars.__all__:
+        assert getattr(orlab.jars, name) is not None
 
 
 def test_enums_are_coherent():

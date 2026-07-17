@@ -13,19 +13,16 @@
    can't, either export `JAVA_HOME` yourself or pass
    `OpenRocketInstance(jvm_path="/path/to/libjvm.so")`.
 
-3. **An OpenRocket jar** —
-   [OpenRocket-24.12.jar](https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar)
-   (or any supported version).
-
-4. **Point orlab at the jar** — pass `jar_path=` to `OpenRocketInstance(...)`
-   or set `ORLAB_JAR`:
+3. **An OpenRocket jar** — let orlab fetch and verify one into its cache:
 
     ```
-    export ORLAB_JAR=/path/to/OpenRocket-24.12.jar
+    python -m orlab fetch
     ```
 
-    The legacy `CLASSPATH` variable also works. Without either, orlab looks
-    for `./OpenRocket-23.09.jar` in the current directory.
+    After that, `OpenRocketInstance()` needs no configuration. To use a jar
+    you already have instead, pass `jar_path=` to `OpenRocketInstance(...)`
+    or set `ORLAB_JAR`; the [jar guide](guides/jars.md) covers the full
+    resolution order, the cache, and fetching versions orlab doesn't pin.
 
 ## First simulation
 
