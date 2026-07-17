@@ -7,6 +7,24 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Changed
+
+- `import orlab` no longer configures the root logger; consumers that relied
+  on orlab's implicit `logging.basicConfig` must configure logging themselves
+  (orlab's own INFO messages are otherwise hidden by Python's defaults).
+- The jar path defaults to `$ORLAB_JAR`, then the first existing jar on the
+  legacy `$CLASSPATH` (list-aware), then `./OpenRocket-23.09.jar` — resolved
+  when an instance is created, not at import.
+- Bad jars raise `orlab.errors.NotAnOpenRocketJar` (previously `BadZipFile`,
+  `KeyError` or `ValueError` depending on how the jar was bad), and using a
+  `Helper` on an unstarted instance raises `OrlabError` (previously bare
+  `Exception`).
+
+### Added
+
+- `py.typed` marker: consumer type checkers now see orlab's annotations.
+- The release workflow refuses to publish if checks or tests fail.
+
 ## [0.4.0] — 2026-07-17
 
 ### Added

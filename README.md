@@ -54,15 +54,15 @@ Before installing **orlab**, ensure you have the following installed on your sys
      wget https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar
      ```
 
-4. **Set the `CLASSPATH` Environment Variable**
+4. **Point orlab at the jar**
 
-   Ensure that the `CLASSPATH` includes the path to the OpenRocket `.jar` file. This step is only necessary if the `.jar` file is not located in the current directory.
+   Pass `jar_path` to `OpenRocketInstance(...)`, or set the `ORLAB_JAR` environment variable. This step is only necessary if the `.jar` file is not located in the current directory.
 
    ```
-   export CLASSPATH=/path/to/OpenRocket-24.12.jar
+   export ORLAB_JAR=/path/to/OpenRocket-24.12.jar
    ```
 
-   _Replace `/path/to/` with the actual directory path where the `.jar` file is located._
+   _Replace `/path/to/` with the actual directory path where the `.jar` file is located. The legacy `CLASSPATH` variable also still works._
 
 ## Setting Up the JDK
 
