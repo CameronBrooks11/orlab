@@ -1,6 +1,8 @@
 import logging
 import os
+import warnings
 import zipfile
+from collections.abc import Sequence
 from typing import Any
 
 import jpype
@@ -78,16 +80,25 @@ class OpenRocketInstance:
     instance's log_level wins.
     """
 
-    # Optionally define the path to the JVM manually
+    # Deprecated: pass jvm_path to __init__ instead. Honored (with a warning)
+    # for one release.
     MANUAL_JVM_PATH = None
-    # MANUAL_JVM_PATH = r'C:\Program Files\Java\jdk-22\bin\server\jvm.dll'
-    # MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-21.0.5.11-hotspot\bin\server\jvm.dll'
-    # MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot\bin\server\jvm.dll'
 
-    def __init__(self, jar_path: str | None = None, log_level: OrLogLevel | str = OrLogLevel.ERROR):
+    def __init__(
+        self,
+        jar_path: str | None = None,
+        log_level: OrLogLevel | str = OrLogLevel.ERROR,
+        *,
+        jvm_path: str | None = None,
+        jvm_args: Sequence[str] = (),
+    ):
         """jar_path is the full path of the OpenRocket .jar file to use;
         defaults to $ORLAB_JAR, then $CLASSPATH, then ./OpenRocket-23.09.jar.
-        log_level can be either OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL
+        log_level can be either OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL.
+        jvm_path selects the JVM library explicitly (default: JPype's
+        auto-detection via JAVA_HOME). jvm_args are appended to the JVM
+        launch arguments, e.g. ("-Xmx4g",) for large monte-carlo runs; both
+        only take effect for the instance that actually starts the JVM.
         """
         self.openrocket: Any = None  # JPackage core root once started
         self.started = False
@@ -116,6 +127,9 @@ class OpenRocketInstance:
                 self.or_version,
                 self.profile.version_string,
             )
+
+        self.jvm_path = jvm_path
+        self.jvm_args = tuple(jvm_args)
 
         if isinstance(log_level, str):
             self.or_log_level = OrLogLevel[log_level]
@@ -147,8 +161,15 @@ class OpenRocketInstance:
             self.started = True
             return self
 
-        # Use MANUAL_JVM_PATH if set, otherwise get default JVM path
-        jvm_path = self.MANUAL_JVM_PATH or jpype.getDefaultJVMPath()
+        jvm_path = self.jvm_path
+        if jvm_path is None and self.MANUAL_JVM_PATH is not None:
+            warnings.warn(
+                "MANUAL_JVM_PATH is deprecated; pass jvm_path to OpenRocketInstance",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            jvm_path = self.MANUAL_JVM_PATH
+        jvm_path = jvm_path or jpype.getDefaultJVMPath()
 
         logger.info(
             f"Starting JVM from {jvm_path} CLASSPATH={self.jar_path} (OpenRocket {self.or_version})"
@@ -164,6 +185,7 @@ class OpenRocketInstance:
         ]
         if self.profile.startup == "core":
             jvm_args.append("-Djava.awt.headless=true")
+        jvm_args.extend(self.jvm_args)
         jpype.startJVM(jvm_path, *jvm_args)
 
         try:

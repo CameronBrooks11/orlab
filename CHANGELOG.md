@@ -7,6 +7,18 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Added
+
+- `OpenRocketInstance(jvm_path=..., jvm_args=(...))`: choose the JVM library
+  and pass launch arguments (e.g. `("-Xmx4g",)` for large monte-carlo runs).
+  The `MANUAL_JVM_PATH` class attribute is deprecated and honored with a
+  warning for one release.
+- `Helper.run_simulation(..., randomize_seed=False)` respects a seed already
+  set on the simulation options; the default still randomizes before every
+  run (previously unconditional and undocumented). On 24.12 a fixed seed
+  reproduces results within one process, not across processes with wind
+  enabled.
+
 ### Changed
 
 - The JVM now outlives the `with OpenRocketInstance(...)` block (JPype cannot

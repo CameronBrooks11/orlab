@@ -48,9 +48,23 @@ class Helper:
         saver = self.openrocket.file.GeneralRocketSaver()
         saver.save(or_java_file, doc)
 
-    def run_simulation(self, sim, listeners: list[AbstractSimulationListener] | None = None):
+    def run_simulation(
+        self,
+        sim,
+        listeners: list[AbstractSimulationListener] | None = None,
+        *,
+        randomize_seed: bool = True,
+    ):
         """This is a wrapper to the Simulation.simulate() for running a simulation
         The optional listeners parameter is a sequence of objects which extend orl.AbstractSimulationListener.
+
+        By default the simulation's random seed is randomized before each run
+        (identical repeated runs would otherwise produce identical numbers —
+        the behavior naive monte-carlo loops rely on). Pass
+        randomize_seed=False to respect the seed already set on the options.
+        Note: on OpenRocket 24.12 the wind model draws additional per-process
+        entropy, so a fixed seed reproduces results within one process but not
+        across processes when wind is enabled.
         """
 
         if listeners is None:
@@ -73,7 +87,8 @@ class Helper:
                 for c in listeners
             ]
 
-        sim.getOptions().randomizeSeed()  # Need to do this otherwise exact same numbers will be generated for each identical run
+        if randomize_seed:
+            sim.getOptions().randomizeSeed()
         sim.simulate(listener_array)
 
     def translate_flight_data_type(self, flight_data_type: FlightDataType | str):
