@@ -2,7 +2,7 @@
 
 **orlab** is a Python module designed to simplify interaction and scripting with [OpenRocket](https://openrocket.info/) from Python. It leverages JPype to bridge Python and Java, enabling seamless control over OpenRocket's functionalities. Currently, it supports access to simulation capabilities given an `.ork` file, with the goal of future expansion to enable more sophisticated computational engineering workflows.
 
-This project is an evolution of the original [orhelper](https://github.com/SilentSys/orhelper) library, which hasn't been maintained recently and is limited in scope. **orlab** updates the compatibility with OpenRocket 23.09, reorganizes the code for better structure, and plans to incorporate additional features.
+This project is an evolution of the original [orhelper](https://github.com/SilentSys/orhelper) library, which hasn't been maintained recently and is limited in scope. **orlab** supports current OpenRocket versions (the package root is detected from the jar automatically), reorganizes the code for better structure, and plans to incorporate additional features.
 
 ## Table of Contents
 
@@ -21,8 +21,8 @@ This project is an evolution of the original [orhelper](https://github.com/Silen
 
 Before installing **orlab**, ensure you have the following installed on your system:
 
-- **OpenRocket** version **23.09**
-  - [Download OpenRocket](https://github.com/openrocket/openrocket/releases/download/release-23.09/OpenRocket-23.09.jar)
+- An **OpenRocket** jar — the version is detected automatically:
+  - [OpenRocket-24.12.jar](https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar) or [OpenRocket-23.09.jar](https://github.com/openrocket/openrocket/releases/download/release-23.09/OpenRocket-23.09.jar) (both tested; 22.02 and 15.03 also verified working)
 - **Adoptium JDK 17 LTS** (or higher?)
   - [Download Adoptium JDK](https://adoptium.net/)
   - Other JDK releases (i.e. 22) have been tested and work, but not thoroughly.
@@ -46,12 +46,12 @@ Before installing **orlab**, ensure you have the following installed on your sys
 
    If you haven't already, download the OpenRocket `.jar` file:
 
-   - **Direct Download:** [OpenRocket-23.09.jar](https://github.com/openrocket/openrocket/releases/download/release-23.09/OpenRocket-23.09.jar)
+   - **Direct Download:** [OpenRocket-24.12.jar](https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar)
 
    - **Using `wget` on Linux:**
 
      ```
-     wget https://github.com/openrocket/openrocket/releases/download/release-23.09/OpenRocket-23.09.jar
+     wget https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar
      ```
 
 4. **Set the `CLASSPATH` Environment Variable**
@@ -59,7 +59,7 @@ Before installing **orlab**, ensure you have the following installed on your sys
    Ensure that the `CLASSPATH` includes the path to the OpenRocket `.jar` file. This step is only necessary if the `.jar` file is not located in the current directory.
 
    ```
-   export CLASSPATH=/path/to/OpenRocket-23.09.jar
+   export CLASSPATH=/path/to/OpenRocket-24.12.jar
    ```
 
    _Replace `/path/to/` with the actual directory path where the `.jar` file is located._
