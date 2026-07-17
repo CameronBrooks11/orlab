@@ -1,6 +1,7 @@
 """orlab exception types."""
 
 __all__ = [
+    "NotAnOpenRocketJar",
     "OrlabError",
     "UnsupportedFlightDataType",
     "UnsupportedOpenRocketVersion",
@@ -9,6 +10,10 @@ __all__ = [
 
 class OrlabError(Exception):
     """Base class for all orlab errors."""
+
+
+class NotAnOpenRocketJar(OrlabError):
+    """The jar path does not point to a readable OpenRocket jar."""
 
 
 class UnsupportedFlightDataType(OrlabError):

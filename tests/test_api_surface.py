@@ -19,6 +19,7 @@ def test_errors_surface_stable():
     import orlab.errors
 
     assert sorted(orlab.errors.__all__) == [
+        "NotAnOpenRocketJar",
         "OrlabError",
         "UnsupportedFlightDataType",
         "UnsupportedOpenRocketVersion",

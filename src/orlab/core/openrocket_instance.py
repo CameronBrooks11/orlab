@@ -1,10 +1,12 @@
 import logging
 import os
+import zipfile
 from typing import Any
 
 import jpype
 
 from .._enums import OrLogLevel
+from ..errors import NotAnOpenRocketJar
 from ..profiles import get_profile
 from ..utils.utils import _get_private_field
 from .version import read_or_version
@@ -48,10 +50,13 @@ def reflect_live_constants(core_pkg) -> tuple[set, set]:
     return types, events
 
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-CLASSPATH = os.environ.get("CLASSPATH", "OpenRocket-23.09.jar")
+
+def _default_jar_path() -> str:
+    """Resolved at instantiation time (not import time): ORLAB_JAR, then the
+    legacy CLASSPATH variable, then a cwd-relative fallback."""
+    return os.environ.get("ORLAB_JAR") or os.environ.get("CLASSPATH") or "OpenRocket-23.09.jar"
 
 
 class OpenRocketInstance:
@@ -66,17 +71,27 @@ class OpenRocketInstance:
     # MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-21.0.5.11-hotspot\bin\server\jvm.dll'
     # MANUAL_JVM_PATH = r'C:\Program Files\Eclipse Adoptium\jdk-17.0.13.11-hotspot\bin\server\jvm.dll'
 
-    def __init__(self, jar_path: str = CLASSPATH, log_level: OrLogLevel | str = OrLogLevel.ERROR):
-        """jar_path is the full path of the OpenRocket .jar file to use
+    def __init__(self, jar_path: str | None = None, log_level: OrLogLevel | str = OrLogLevel.ERROR):
+        """jar_path is the full path of the OpenRocket .jar file to use;
+        defaults to $ORLAB_JAR, then $CLASSPATH, then ./OpenRocket-23.09.jar.
         log_level can be either OFF, ERROR, WARN, INFO, DEBUG, TRACE and ALL
         """
         self.openrocket: Any = None  # JPackage core root once started
         self.started = False
 
+        jar_path = jar_path or _default_jar_path()
         if not os.path.exists(jar_path):
-            raise FileNotFoundError(f"Jar file {os.path.abspath(jar_path)} does not exist")
+            raise FileNotFoundError(
+                f"Jar file {os.path.abspath(jar_path)} does not exist "
+                "(pass jar_path or set ORLAB_JAR)"
+            )
         self.jar_path = jar_path
-        self.or_version = read_or_version(jar_path)
+        try:
+            self.or_version = read_or_version(jar_path)
+        except (zipfile.BadZipFile, KeyError, ValueError) as e:
+            raise NotAnOpenRocketJar(
+                f"{os.path.abspath(jar_path)} is not an OpenRocket jar ({e})"
+            ) from e
         self.profile, exact = get_profile(self.or_version)
         if not exact:
             logger.warning(
