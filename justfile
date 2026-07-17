@@ -35,3 +35,7 @@ test:
 # dir on first run; override with ORLAB_JAR_CACHE / ORLAB_TEST_VERSION).
 test-integration:
     uv run pytest -q -m integration tests/integration
+
+# Build the docs site (CI-equivalent); `just docs serve` for live preview.
+docs cmd="build":
+    uv run --group docs mkdocs {{cmd}} {{ if cmd == "build" { "--strict" } else { "" } }}

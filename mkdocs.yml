@@ -1,0 +1,49 @@
+site_name: orlab
+site_description: Script OpenRocket from Python — simulations, listeners, and flight data via JPype
+site_url: https://cameronbrooks11.github.io/orlab/
+repo_url: https://github.com/CameronBrooks11/orlab
+repo_name: CameronBrooks11/orlab
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep orange
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep orange
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: sphinx
+            show_source: true
+            members_order: source
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - API reference: api.md
+  - Maintainers: maintainers.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - toc:
+      permalink: true

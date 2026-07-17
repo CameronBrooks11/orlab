@@ -2,10 +2,19 @@ __all__ = ["JIterator"]
 
 
 class JIterator:
-    """This class is a wrapper for java iterators to allow them to be used as python iterators"""
+    """Wraps a Java iterable as a Python iterator.
+
+    Built for walking a rocket's component tree::
+
+        for component in JIterator(rocket):
+            print(component.getName())
+
+    :param jit: any Java object exposing ``iterator(boolean)`` — in practice a
+        ``RocketComponent`` (the boolean requests iteration over the full
+        subtree, the component itself included).
+    """
 
     def __init__(self, jit):
-        """Give this any java object which implements iterable"""
         self.jit = jit.iterator(True)
 
     def __iter__(self):

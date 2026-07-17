@@ -8,8 +8,21 @@ __all__ = ["AbstractSimulationListener"]
 
 
 class AbstractSimulationListener:
-    """This is a python implementation of openrocket.simulation.listeners.AbstractSimulationListener.
-    Subclasses of this are suitable for passing to helper.run_simulation.
+    """Python implementation of OpenRocket's AbstractSimulationListener.
+    Subclass it, override the hooks you need, and pass instances to
+    ``Helper.run_simulation(sim, listeners=[...])``.
+
+    OpenRocket clones listeners before the run, so collect results through
+    shared mutable state (e.g. a list the caller keeps a reference to), not
+    by assigning to ``self`` and reading it back afterwards. Exceptions
+    raised inside a hook propagate out of ``run_simulation`` intact.
+
+    Hook groups: SimulationListener (``startSimulation``, ``postStep``, …),
+    SimulationEventListener (``handleFlightEvent``, …), and
+    SimulationComputationListener (``preWindModel``,
+    ``postAerodynamicCalculation``, …). Boolean-returning hooks continue the
+    simulation/event on True; pre-computation hooks return an override value
+    or None/NaN to leave OpenRocket's computation untouched.
     """
 
     def __str__(self):

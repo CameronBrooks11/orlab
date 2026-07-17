@@ -7,6 +7,13 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Added
+
+- Documentation site at <https://cameronbrooks11.github.io/orlab/>
+  (mkdocs-material + mkdocstrings API reference, deployed from main by CI);
+  `just docs` builds it locally. The maintainer release notes moved there
+  from `docs/pypi_usage.md`.
+
 ### Changed
 
 - README rewritten: version-support matrix (all four OpenRocket versions
