@@ -30,14 +30,15 @@ version profiles.
 
 | OpenRocket | Status | Notes |
 | ---------- | ------ | ----- |
-| 24.12 | CI-tested (JDK 17, 21) | headless startup, no display needed |
+| 24.12 | CI-tested (JDK 17, 21) | official headless bootstrap |
 | 23.09 | CI-tested (JDK 17, 21) | |
 | 22.02 | CI-tested (JDK 17, 21) | |
 | 15.03 | CI-tested (JDK 17, 21) | |
 | newer releases | forward fallback | run day-one on the nearest older profile, with a warning; full support is one profile-regeneration PR |
 
-Every version in the table runs real simulations in CI on every push, and a
-monthly canary checks the newest upstream release against the newest profile.
+Every version in the table runs real simulations in CI (no display server
+needed on any of them) on every pull request and push to main, and a monthly
+canary checks the newest upstream release against the newest profile.
 
 Version differences are enforced with clear errors: requesting a constant the
 loaded version does not have raises `UnsupportedFlightDataType` naming the
@@ -46,7 +47,7 @@ e.g. `orl.get_timeseries(sim, ["TYPE_SOME_NEW_TYPE"])`.
 
 ## Installation
 
-1. **Install the package**
+1. **Install the package** (Python 3.10+)
 
    ```
    pip install orlab
@@ -56,21 +57,23 @@ e.g. `orl.get_timeseries(sim, ["TYPE_SOME_NEW_TYPE"])`.
    tested). Let the installer set `JAVA_HOME` — JPype finds the JVM through
    it. See [Setting up the JDK](#setting-up-the-jdk) if it doesn't.
 
-3. **Download an OpenRocket jar**
+3. **Download an OpenRocket jar** —
+   [OpenRocket-24.12.jar](https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar),
+   or:
 
    ```
    wget https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar
    ```
 
 4. **Point orlab at the jar** — pass `jar_path=` to `OpenRocketInstance(...)`,
-   or set an environment variable (only needed when the jar is not in the
-   current directory):
+   or set an environment variable:
 
    ```
    export ORLAB_JAR=/path/to/OpenRocket-24.12.jar
    ```
 
-   The legacy `CLASSPATH` variable also still works.
+   The legacy `CLASSPATH` variable also still works. Without either, orlab
+   looks for `./OpenRocket-23.09.jar` in the current directory.
 
 ## Usage
 

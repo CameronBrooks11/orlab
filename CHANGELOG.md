@@ -34,6 +34,8 @@ reconstructed from the git log.
   run (previously unconditional and undocumented). On 24.12 a fixed seed
   reproduces results within one process, not across processes with wind
   enabled.
+- `py.typed` marker: consumer type checkers now see orlab's annotations.
+- The release workflow refuses to publish if checks or tests fail.
 
 ### Changed
 
@@ -56,11 +58,6 @@ reconstructed from the git log.
   `KeyError` or `ValueError` depending on how the jar was bad), and using a
   `Helper` on an unstarted instance raises `OrlabError` (previously bare
   `Exception`).
-
-### Added
-
-- `py.typed` marker: consumer type checkers now see orlab's annotations.
-- The release workflow refuses to publish if checks or tests fail.
 
 ## [0.4.0] — 2026-07-17
 
