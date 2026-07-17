@@ -1,0 +1,5 @@
+; orlab test motor, ~45 Ns total impulse
+ORLAB45 24 70 0 0.0220 0.0450 orlab
+   0.10 30.0
+   1.40 30.0
+   1.50 0.0
