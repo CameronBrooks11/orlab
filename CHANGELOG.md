@@ -7,6 +7,12 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Added
+
+- `FlightEvent.SIM_WARN` and `FlightEvent.SIM_ABORT` (emitted by OpenRocket
+  24.12+) and `FlightDataType.TYPE_MOTOR_MASS` (the 22.02+ name for the
+  propellant-mass series; `TYPE_PROPELLANT_MASS` remains for 15.03).
+
 ### Changed
 
 - Packaging migrated to `pyproject.toml` (hatchling) with a `src/` layout and
@@ -22,6 +28,11 @@ reconstructed from the git log.
 
 ### Fixed
 
+- `Helper.get_events()` no longer crashes on flight event types missing from
+  the Python enum — on 24.12, simulation warnings are recorded as `SIM_WARN`
+  events and previously raised a bare `KeyError`. Unknown event types from
+  future OpenRocket versions are now skipped with a logged warning, and
+  `translate_flight_event` raises a clear `ValueError` instead.
 - `Helper.get_events()` return annotation matches its actual behavior
   (`Dict[FlightEvent, List[float]]` — a list of times per event).
 

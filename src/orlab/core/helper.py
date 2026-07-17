@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterable
 
 import jpype
@@ -9,6 +10,8 @@ from .openrocket_instance import OpenRocketInstance
 from .simulation_listener import AbstractSimulationListener
 
 __all__ = ["Helper"]
+
+logger = logging.getLogger(__name__)
 
 
 class Helper:
@@ -116,23 +119,38 @@ class Helper:
         return output
 
     def translate_flight_event(self, flight_event) -> FlightEvent:
-        return {
-            getattr(self.openrocket.simulation.FlightEvent.Type, x.name): x for x in FlightEvent
-        }[flight_event]
+        """Translates a Java FlightEvent.Type constant to the FlightEvent enum.
+        Raises ValueError for event types this orlab version does not know
+        (newer OpenRocket releases add types; get_events skips them instead).
+        """
+        name = str(flight_event.name())
+        try:
+            return FlightEvent[name]
+        except KeyError:
+            raise ValueError(
+                f"Unknown flight event type {name!r} from the loaded OpenRocket version"
+            ) from None
 
     def get_events(self, simulation) -> dict[FlightEvent, list[float]]:
         """Returns a dictionary of all the flight events in a given simulation.
         Key is FlightEvent and value is a list of all the times at which the event occurs.
+        Event types not known to this orlab version are skipped with a warning.
         """
         branch = simulation.getSimulatedData().getBranch(0)
 
         output: dict[FlightEvent, list[float]] = {}
+        unknown: set[str] = set()
         for ev in branch.getEvents():
-            type = self.translate_flight_event(ev.getType())
-            if type in output:
-                output[type].append(float(ev.getTime()))
-            else:
-                output[type] = [float(ev.getTime())]
+            java_type = ev.getType()
+            try:
+                event = self.translate_flight_event(java_type)
+            except ValueError:
+                name = str(java_type.name())
+                if name not in unknown:
+                    unknown.add(name)
+                    logger.warning("Skipping unknown flight event type %s", name)
+                continue
+            output.setdefault(event, []).append(float(ev.getTime()))
 
         return output
 

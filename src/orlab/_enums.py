@@ -17,7 +17,9 @@ class OrLogLevel(Enum):
     ALL = auto()
 
 
-# Mirrors net.sf.openrocket.simulation.FlightDataType
+# Union of openrocket.simulation.FlightDataType constants across supported
+# versions; availability differs per version (e.g. TYPE_PROPELLANT_MASS is
+# 15.03-only, renamed TYPE_MOTOR_MASS in 22.02).
 class FlightDataType(Enum):
     TYPE_TIME = auto()
     TYPE_ALTITUDE = auto()
@@ -39,7 +41,8 @@ class FlightDataType(Enum):
     TYPE_PITCH_RATE = auto()
     TYPE_YAW_RATE = auto()
     TYPE_MASS = auto()
-    TYPE_PROPELLANT_MASS = auto()
+    TYPE_PROPELLANT_MASS = auto()  # 15.03 only
+    TYPE_MOTOR_MASS = auto()  # 22.02+ name for the same series
     TYPE_LONGITUDINAL_INERTIA = auto()
     TYPE_ROTATIONAL_INERTIA = auto()
     TYPE_CP_LOCATION = auto()
@@ -76,7 +79,8 @@ class FlightDataType(Enum):
     TYPE_COMPUTATION_TIME = auto()
 
 
-# Mirrors net.sf.openrocket.simulation.FlightEvent
+# Union of openrocket.simulation.FlightEvent.Type constants across supported
+# versions (SIM_WARN and SIM_ABORT exist on 24.12+ only).
 class FlightEvent(Enum):
     LAUNCH = auto()
     IGNITION = auto()
@@ -91,4 +95,6 @@ class FlightEvent(Enum):
     SIMULATION_END = auto()
     ALTITUDE = auto()
     TUMBLE = auto()
+    SIM_WARN = auto()
+    SIM_ABORT = auto()
     EXCEPTION = auto()
