@@ -89,6 +89,8 @@ import orlab
 from orlab.jars import find_installed
 
 inst = find_installed()  # Installed(jar=..., jvm=..., version=...) or None
+if inst is None:
+    raise SystemExit("no desktop OpenRocket found — see `python -m orlab fetch`")
 with orlab.OpenRocketInstance(str(inst.jar), jvm_path=inst.jvm) as instance:
     ...
 ```
@@ -103,7 +105,7 @@ Where it looks:
 
 | OS | Location | Status |
 | -- | -------- | ------ |
-| Linux | install root from the installer's `.desktop` entry | verified against a real install |
+| Linux | install root from the installer's per-user `.desktop` entry | verified against a real install |
 | macOS | `/Applications/OpenRocket.app/Contents/Resources/app` | config-derived, best-effort |
 | Windows | `%ProgramFiles%\OpenRocket` | config-derived, best-effort |
 

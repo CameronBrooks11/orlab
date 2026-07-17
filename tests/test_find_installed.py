@@ -154,13 +154,32 @@ def test_instance_accepts_pathlike_jvm_path(tmp_path):
 
 
 def test_chain_never_calls_discovery(tmp_path, monkeypatch):
-    monkeypatch.setattr(
-        jars, "find_installed", lambda: pytest.fail("resolution chain called find_installed")
-    )
+    """Behavior-level: even with a perfectly discoverable install present,
+    a full resolution miss stays a miss — the chain must not fall back to
+    discovery (regardless of how it might import find_installed)."""
+    root = tmp_path / "install"
+    _write_jar(root / "jar" / "OpenRocket-24.12.jar")
+    monkeypatch.setenv("ORLAB_OR_INSTALL_DIR", str(root))
+    assert jars.find_installed() is not None  # the bait is real
+    with pytest.raises(FileNotFoundError):
+        _resolve_default_jar()
+
     jar = tmp_path / "explicit.jar"
     _write_jar(jar)
     monkeypatch.setenv("ORLAB_JAR", str(jar))
+    monkeypatch.setattr(
+        jars, "find_installed", lambda: pytest.fail("resolution chain called find_installed")
+    )
     assert _resolve_default_jar() == (str(jar), "ORLAB_JAR")
-    monkeypatch.delenv("ORLAB_JAR")
-    with pytest.raises(FileNotFoundError):
-        _resolve_default_jar()  # a full miss must not fall back to discovery
+
+
+def test_multiple_installs_newest_version_wins(tmp_path, monkeypatch):
+    """A stale breadcrumb that sorts first must not beat a newer install."""
+    old = tmp_path / "a-sorts-first"
+    _write_jar(old / "jar" / "OpenRocket-23.09.jar", version="23.09")
+    new = tmp_path / "b-sorts-second"
+    _write_jar(new / "OpenRocket.jar", version="24.12")
+    monkeypatch.setattr(jars, "_platform_install_roots", lambda: [old, new])
+
+    inst = jars.find_installed()
+    assert inst is not None and inst.version == "24.12"

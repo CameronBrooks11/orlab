@@ -136,7 +136,7 @@ class OpenRocketInstance:
         jar_path: str | None = None,
         log_level: OrLogLevel | str = OrLogLevel.ERROR,
         *,
-        jvm_path: str | os.PathLike | None = None,
+        jvm_path: "str | os.PathLike[str] | None" = None,
         jvm_args: Sequence[str] = (),
     ):
         """jar_path is the full path of the OpenRocket .jar file to use;
@@ -228,7 +228,7 @@ class OpenRocketInstance:
                 DeprecationWarning,
                 stacklevel=2,
             )
-            jvm_path = self.MANUAL_JVM_PATH
+            jvm_path = os.fspath(self.MANUAL_JVM_PATH)
         jvm_path = jvm_path or jpype.getDefaultJVMPath()
 
         logger.info(

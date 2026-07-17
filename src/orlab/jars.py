@@ -222,11 +222,13 @@ def find_installed() -> Installed | None:
             instance = orlab.OpenRocketInstance(str(inst.jar), jvm_path=inst.jvm)
 
     Never raises and never downloads; returns None when nothing usable is
-    found. ``ORLAB_OR_INSTALL_DIR`` overrides the per-OS search (its parent
-    directory conventions still apply inside); setting it to the empty
-    string disables discovery entirely. ``jvm`` is the install's bundled
-    JVM library when that JRE is Java 17+ (older bundled JREs can't run
-    orlab; the jar itself is still usable with your own JDK).
+    found. With several coexisting installs, the newest OpenRocket version
+    wins. ``ORLAB_OR_INSTALL_DIR`` overrides the per-OS search with an
+    explicit install root (the standard in-root layouts are probed beneath
+    it); setting it to the empty string disables discovery entirely.
+    ``jvm`` is the install's bundled JVM library when that JRE is Java 17+
+    (older bundled JREs can't run orlab; the jar itself is still usable
+    with your own JDK).
     """
     try:
         override = os.environ.get("ORLAB_OR_INSTALL_DIR")
@@ -234,10 +236,18 @@ def find_installed() -> Installed | None:
             roots = [Path(override)] if override else []
         else:
             roots = _platform_install_roots()
+        found = []
         for root in roots:
-            found = _probe_install_root(root)
-            if found is not None:
-                return found
+            try:
+                inst = _probe_install_root(root)
+            except Exception:
+                logger.debug("skipping unreadable install candidate %s", root, exc_info=True)
+                continue
+            if inst is not None:
+                found.append(inst)
+        if found:
+            # a stale breadcrumb sorting first must not beat a newer install
+            return max(found, key=lambda inst: parse_version(inst.version))
     except Exception:  # never-raise contract: discovery is best-effort
         logger.debug("installed-OpenRocket discovery failed", exc_info=True)
     return None
