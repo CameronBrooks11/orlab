@@ -60,7 +60,7 @@ Java code reaching into component presets will find them empty.
 
 Launch conditions and uniform wind need no wrapper — they're single calls
 on live Java objects, and the verified names live in
-[`DECLARATIVE_KEYS`](../api.md#declarative-simulation-options):
+[`DECLARATIVE_KEYS`](../api.md#parallel-running-and-declarative-options):
 
 ```python
 opts = sim.getOptions()

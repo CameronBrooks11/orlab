@@ -2,8 +2,9 @@
 
 **orlab** scripts [OpenRocket](https://openrocket.info/) from Python via
 [JPype](https://jpype.readthedocs.io/): load `.ork` files, run simulations
-(optionally with custom listeners), and extract time series, final values,
-and flight events as Python/numpy data.
+(optionally with custom listeners), and extract time series, flight
+summaries, and events as Python/numpy data — up to parallel dispersion
+studies with one verified jar fetch and a worker pool.
 
 ```python
 import orlab
@@ -21,8 +22,8 @@ with orlab.OpenRocketInstance(jar_path="OpenRocket-24.12.jar") as instance:
 ```
 
 The project is an evolution of [orhelper](https://github.com/SilentSys/orhelper).
-Beyond the basics, orlab ships the plumbing dispersion studies otherwise
-hand-roll:
+Beyond the basics, orlab ships the plumbing you'd otherwise hand-roll
+for dispersion studies:
 
 - `python -m orlab fetch` — sha256-verified jar download and cache;
   `OpenRocketInstance()` then boots with zero configuration.
