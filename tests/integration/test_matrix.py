@@ -7,7 +7,6 @@ Run with: just test-integration          (all versions)
 """
 
 import json
-import os
 import subprocess
 import sys
 from pathlib import Path
