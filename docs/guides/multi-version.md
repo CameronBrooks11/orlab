@@ -7,8 +7,7 @@ from the jars themselves and checked in for 15.03, 22.02, 23.09, and 24.12.
 
 ```python
 instance = orlab.OpenRocketInstance(jar_path="OpenRocket-24.12.jar")
-print(instance.or_version)               # "24.12"
-print(instance.profile.version_string)   # "24.12"
+print(instance.or_version)  # "24.12" — read from the jar, no JVM needed yet
 ```
 
 ## Constants differ between versions
@@ -58,14 +57,24 @@ implementation:
 spawns a fresh Python per version and asserts, among other things, that the
 same rocket's apogee agrees across all four supported versions within 5 %.
 
+OpenRocket logs to stdout, so don't parse a case's whole output as JSON —
+print one marked line and scan for it (the harness does the same):
+
 ```python
 import json
 import subprocess
 import sys
 
-CASE = "case.py"  # loads the ork, simulates, prints json.dumps(results)
-results = {
-    jar: json.loads(subprocess.run([sys.executable, CASE, jar], capture_output=True, text=True, check=True).stdout)
-    for jar in ["OpenRocket-23.09.jar", "OpenRocket-24.12.jar"]
-}
+CASE = "case.py"  # takes the jar as argv[1], simulates, prints "RESULT " + json.dumps(...)
+
+
+def run_case(jar):
+    out = subprocess.run(
+        [sys.executable, CASE, jar], capture_output=True, text=True, check=True
+    ).stdout
+    line = next(ln for ln in out.splitlines() if ln.startswith("RESULT "))
+    return json.loads(line[len("RESULT ") :])
+
+
+results = {jar: run_case(jar) for jar in ["OpenRocket-23.09.jar", "OpenRocket-24.12.jar"]}
 ```

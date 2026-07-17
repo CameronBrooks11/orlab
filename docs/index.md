@@ -40,6 +40,9 @@ newest upstream release.
 
 - [Getting started](getting-started.md) — install, first simulation, the
   things worth knowing before a big run
+- Guides — [simulation listeners](guides/listeners.md),
+  [monte-carlo studies](guides/monte-carlo.md), and
+  [working across OpenRocket versions](guides/multi-version.md)
 - [API reference](api.md) — the full public surface, generated from the
   docstrings
 - [Examples on GitHub](https://github.com/CameronBrooks11/orlab/tree/main/examples/simple_ork)

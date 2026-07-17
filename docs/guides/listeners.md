@@ -35,8 +35,9 @@ subset:
 
 - **SimulationListener** — `startSimulation(status)`,
   `endSimulation(status, exception)`, `preStep(status)` /
-  `postStep(status)`, once per time step. `postStep` is the natural place
-  for progress reporting on long runs.
+  `postStep(status)`, once per time step. `preStep` returns a bool
+  (`True` to take the step); `postStep` is the natural place for progress
+  reporting on long runs.
 - **SimulationEventListener** — `addFlightEvent(status, event)` /
   `handleFlightEvent(status, event)`, `motorIgnition(...)`,
   `recoveryDeviceDeployment(...)`. Return `True` to let the event proceed,

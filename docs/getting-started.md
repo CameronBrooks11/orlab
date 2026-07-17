@@ -43,6 +43,7 @@ with orlab.OpenRocketInstance() as instance:
     )
     events = orl.get_events(sim)
     apogee_time = events[orlab.FlightEvent.APOGEE][0]
+    finals = orl.get_final_values(sim, [orlab.FlightDataType.TYPE_ALTITUDE])
 ```
 
 `sim` and `doc` are live Java objects — anything OpenRocket can do to them,
