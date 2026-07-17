@@ -128,8 +128,11 @@ class OpenRocketInstance:
                 self.profile.version_string,
             )
 
+        if isinstance(jvm_args, str):
+            raise TypeError("jvm_args must be a sequence of strings, not a string")
         self.jvm_path = jvm_path
         self.jvm_args = tuple(jvm_args)
+        self._started_jvm = False
 
         if isinstance(log_level, str):
             self.or_log_level = OrLogLevel[log_level]
@@ -155,6 +158,11 @@ class OpenRocketInstance:
                     f"jar. Use a new process for {requested}."
                 )
             # Same jar: reuse the running OpenRocket.
+            if not self._started_jvm and (self.jvm_path is not None or self.jvm_args):
+                logger.warning(
+                    "This instance did not start the JVM; its jvm_path/jvm_args "
+                    "have no effect (the JVM is per-process and already running)"
+                )
             self.openrocket = _active_core_root
             self.openrocket_swing = _jpackage(self.profile.swing_root)
             self._set_or_log_level()
@@ -200,6 +208,7 @@ class OpenRocketInstance:
 
         _active_core_root = self.openrocket
         _active_jar_path = os.path.abspath(self.jar_path)
+        self._started_jvm = True
         self._warn_on_profile_drift()
         self.started = True
 

@@ -30,7 +30,40 @@ def captured_start(monkeypatch):
     monkeypatch.setattr(oi.jpype, "getDefaultJVMPath", lambda: "/detected/libjvm.so")
     monkeypatch.setattr(OpenRocketInstance, "_start_openrocket", lambda self: None)
     monkeypatch.setattr(OpenRocketInstance, "_warn_on_profile_drift", lambda self: None)
+    # __enter__ reassigns these module globals; register them with monkeypatch
+    # so teardown restores pristine state for other tests
+    monkeypatch.setattr(oi, "_active_jar_path", None)
+    monkeypatch.setattr(oi, "_active_core_root", None)
     return calls
+
+
+def test_jvm_args_rejects_plain_string(tmp_path):
+    with pytest.raises(TypeError, match="sequence of strings"):
+        OpenRocketInstance(jar_path=_fake_jar(tmp_path), jvm_args="-Xmx4g")
+
+
+def test_reuse_warns_when_jvm_args_have_no_effect(tmp_path, captured_start, monkeypatch, caplog):
+    import logging
+    import os
+
+    jar = _fake_jar(tmp_path)
+    first = OpenRocketInstance(jar_path=jar, jvm_args=["-Xmx2g"])
+    first.__enter__()
+
+    monkeypatch.setattr(oi.jpype, "isJVMStarted", lambda: True)
+    monkeypatch.setattr(oi, "_active_jar_path", os.path.abspath(jar))
+    monkeypatch.setattr(oi, "_jpackage", lambda dotted: None)
+    monkeypatch.setattr(OpenRocketInstance, "_set_or_log_level", lambda self: None)
+
+    second = OpenRocketInstance(jar_path=jar, jvm_args=["-Xmx8g"])
+    with caplog.at_level(logging.WARNING, logger="orlab.core.openrocket_instance"):
+        second.__enter__()
+    assert any("no effect" in r.message for r in caplog.records)
+
+    caplog.clear()
+    with caplog.at_level(logging.WARNING, logger="orlab.core.openrocket_instance"):
+        first.__enter__()  # the instance that started the JVM must not warn
+    assert not caplog.records
 
 
 def test_jvm_args_and_path_reach_startjvm(tmp_path, captured_start):
