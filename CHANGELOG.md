@@ -9,6 +9,24 @@ reconstructed from the git log.
 
 ### Added
 
+- Dispersion listeners (`orlab.listeners`): `WindProfile` — deterministic
+  altitude-dependent wind on every supported version via the wind-model
+  override hook (replaces built-in wind including turbulence;
+  meteorological direction convention matching `setWindDirection`,
+  verified by identical drift; component-wise vector interpolation, so
+  359°→1° blends through north) — and `ThrustFactor`, the motor
+  batch-variation knob. Both hold plain-Python state only: they pickle
+  into `SimulationPool` workers and survive OpenRocket's listener
+  cloning.
+- `Helper.get_components_of_type(root, "BodyTube")`: typed component
+  lookup by class name (resolved against the loaded version), superclass,
+  or interface — `"MotorMount"` finds every mount.
+- The simulation-setup guide covers layered wind, the native 24.12
+  multi-level model (version-gated, stochastic) vs `WindProfile`
+  (cross-version, deterministic), and the listener-cloning caveats; the
+  manifest checks the wind-override surface and the canary runs the wind
+  case.
+
 - Motor selection and swapping: `Helper.set_motor(sim, motor)` changes the
   motor a simulation actually flies — by database designation
   (`find_motor`, which requires `manufacturer=` for the common hobby

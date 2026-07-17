@@ -187,6 +187,29 @@ def verify_manifest(instance, startup):
         "Application.getMotorSetDatabase",
     )
     require_class(core, "file.motor.GeneralMotorLoader")
+    # dispersion listeners: the wind-override Coordinate (all versions) and
+    # the native multi-level wind surface the docs recipe uses (24.12+)
+    require_class(core, "util.Coordinate")
+    if parse_version(instance.or_version) >= (24, 12):
+        require_class(core, "models.wind.WindModelType")
+        require_class(
+            core,
+            "simulation.SimulationOptions",
+            lambda c: _has_method(c, "setWindModelType"),
+            "SimulationOptions.setWindModelType",
+        )
+        require_class(
+            core,
+            "simulation.SimulationOptions",
+            lambda c: _has_method(c, "getMultiLevelWindModel"),
+            "SimulationOptions.getMultiLevelWindModel",
+        )
+        require_class(
+            core,
+            "models.wind.MultiLevelPinkNoiseWindModel",
+            lambda c: _has_method(c, "addWindLevel") and _has_method(c, "clearLevels"),
+            "MultiLevelPinkNoiseWindModel.addWindLevel/clearLevels",
+        )
     if modern_motors:
         require_class(
             core,

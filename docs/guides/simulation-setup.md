@@ -83,3 +83,76 @@ nose.setOverrideMass(0.035)         # kg
 
 All values are SI (meters, radians, kilograms, Kelvin); OpenRocket's
 setters do no unit conversion.
+
+`get_components_of_type` finds every component of a class — by name string
+resolved against the loaded version, a superclass, or an interface:
+
+```python
+tubes = orl.get_components_of_type(sim.getRocket(), "BodyTube")
+mounts = orl.get_components_of_type(sim.getRocket(), "MotorMount")  # interface
+```
+
+## Layered wind: WindProfile
+
+`orlab.listeners.WindProfile` gives a deterministic altitude-dependent
+wind on **every** supported OpenRocket version — it replaces the built-in
+wind model *including its turbulence*:
+
+```python
+from orlab.listeners import WindProfile
+
+profile = WindProfile(
+    altitudes_m=[0.0, 20.0, 20.001, 100.0],   # epsilon step = sharp layer
+    speeds_ms=[5.0, 5.0, 20.0, 20.0],
+    directions_rad=0.0,                        # wind FROM north, like setWindDirection
+)
+orl.run_simulation(sim, listeners=[profile])
+```
+
+`directions_rad` follows `setWindDirection`'s meteorological convention
+(the direction the wind blows *from*; verified to drift flights
+identically). Between points the wind *vector* is interpolated
+component-wise, so 359°→1° blends through north rather than swinging
+through south; sharp layers need the epsilon-step idiom shown above
+because altitudes must be strictly increasing. Outside the range the end
+values hold. Because the profile holds only plain-Python state, it
+pickles — pass instances through `SimulationPool` worker functions freely.
+
+`orlab.listeners.ThrustFactor(1.05)` is the companion knob: it multiplies
+every thrust sample, the classic motor batch-variation dispersion.
+
+## Native multi-level wind (24.12 only)
+
+OpenRocket 24.12 has its own multi-level wind model with turbulence:
+
+```python
+WindModelType = orl.openrocket.models.wind.WindModelType
+opts.setWindModelType(WindModelType.MULTI_LEVEL)
+model = opts.getMultiLevelWindModel()
+model.clearLevels()
+model.addWindLevel(0.0, 5.0, 0.0, 0.05)      # altitude, speed, direction, std dev
+model.addWindLevel(100.0, 12.0, 0.3, 0.1)
+# model.importLevelsFromCSV(java.io.File) reads a whole sounding at once
+```
+
+This is the stochastic, version-gated alternative to `WindProfile`
+(which is deterministic and cross-version). In probing, the legacy
+`setWindSpeedAverage` still influenced a MULTI_LEVEL simulation — treat
+mixing the two mechanisms as undefined and drive one of them.
+
+## Listener caveats
+
+- **OpenRocket clones listeners** before a run: instance attributes
+  mutated inside hooks are invisible afterwards. `WindProfile` and
+  `ThrustFactor` are read-only by design; extenders should append to a
+  shared list, never accumulate on `self` (see the
+  [listeners guide](listeners.md)).
+- **Java objects are process-local**: across `SimulationPool` workers,
+  pass listener instances, designation strings, and `.eng` paths — never
+  live Java objects.
+- Python listeners add per-step overhead (roughly 4× on very fast
+  simple-rocket sims); for big stochastic studies on 24.12 the native
+  multi-level model is the fast path.
+- orlab's jar-running integration CI is Linux-only; the unit suite (and
+  everything above that doesn't touch a JVM) is also exercised on
+  Windows.

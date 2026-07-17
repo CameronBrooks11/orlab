@@ -96,6 +96,14 @@ def test_declarative_case_values_match_contract():
     assert set(module.VALUES) == set(DECLARATIVE_KEYS)
 
 
+def test_listeners_surface_stable():
+    import orlab.listeners
+
+    assert sorted(orlab.listeners.__all__) == ["ThrustFactor", "WindProfile"]
+    for name in orlab.listeners.__all__:
+        assert getattr(orlab.listeners, name) is not None
+
+
 def test_enums_are_coherent():
     from orlab import FlightDataType, FlightEvent, OrLogLevel
 
