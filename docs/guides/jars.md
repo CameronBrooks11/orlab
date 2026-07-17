@@ -72,6 +72,12 @@ The refusal error includes the release URL, how to compute the digest, and
 the digest of any file already cached for that version. A newer orlab
 release may simply pin the version — upgrading is usually the easier fix.
 
+One caveat: the zero-config resolution chain only auto-selects **pinned**
+versions from the cache (it has no digest to re-verify anything else
+against). A jar you fetched with `sha256=` stays cached, but you point at
+it explicitly — capture the printed path into `ORLAB_JAR` or pass it as
+`jar_path=`.
+
 ## Worth knowing about the default version
 
 `python -m orlab fetch` currently fetches OpenRocket 24.12. On its headless

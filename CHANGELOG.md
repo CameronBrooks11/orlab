@@ -10,8 +10,9 @@ reconstructed from the git log.
 ### Added
 
 - Jar management: `orlab.fetch_jar(version)` downloads an OpenRocket release
-  jar into a local cache (`ORLAB_JAR_CACHE`, default `~/.cache/orlab-jars`)
-  and verifies its sha256 against pins shipped with orlab. Unpinned versions
+  jar into a local cache (`ORLAB_JAR_CACHE`, else `$XDG_CACHE_HOME/orlab-jars`,
+  else `~/.cache/orlab-jars`) and verifies its sha256 against pins shipped
+  with orlab. Unpinned versions
   require an explicit `sha256=`; there is no way to skip verification
   (`orlab.errors.JarVerificationError`). A `python -m orlab` CLI wraps it:
   `fetch [version] [--sha256 HEX]` (stable, scriptable stdout: the jar path)

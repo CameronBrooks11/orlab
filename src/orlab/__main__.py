@@ -41,6 +41,8 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         return 0
 
+    import os
+
     from .core.openrocket_instance import _resolve_default_jar
 
     try:
@@ -48,7 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     except FileNotFoundError as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
-    print(f"{path} (via {source})")
+    note = "" if os.path.exists(path) else " — does not exist"
+    print(f"{path} (via {source}){note}")
     return 0
 
 

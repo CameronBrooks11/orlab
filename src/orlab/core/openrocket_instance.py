@@ -66,7 +66,7 @@ def _newest_cwd_jar() -> str | None:
     such jars still run when named explicitly."""
     best: tuple[tuple[int, int], str] | None = None
     for name in os.listdir("."):
-        if not (name.startswith("OpenRocket-") and name.endswith(".jar")):
+        if not (name.startswith("OpenRocket-") and name.endswith(".jar") and os.path.isfile(name)):
             continue
         version = name[len("OpenRocket-") : -len(".jar")]
         try:
@@ -74,7 +74,8 @@ def _newest_cwd_jar() -> str | None:
             _, exact = get_profile(version)
         except (ValueError, UnsupportedOpenRocketVersion):
             continue
-        if exact and (best is None or parsed > best[0]):
+        # (parsed, name) tie-break keeps same-version filenames deterministic
+        if exact and (best is None or (parsed, name) > (best[0], best[1])):
             best = (parsed, name)
     return best[1] if best else None
 
@@ -155,7 +156,8 @@ class OpenRocketInstance:
         if not os.path.exists(jar_path):
             raise FileNotFoundError(
                 f"Jar file {os.path.abspath(jar_path)} does not exist "
-                "(pass jar_path or set ORLAB_JAR)"
+                "(pass jar_path, set ORLAB_JAR, or fetch one: "
+                "`python -m orlab fetch`)"
             )
         self.jar_path = jar_path
         try:

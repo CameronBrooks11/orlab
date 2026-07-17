@@ -17,6 +17,15 @@ JAR_SHA = hashlib.sha256(JAR_BYTES).hexdigest()
 OTHER_BYTES = b"different bytes entirely"
 
 
+@pytest.fixture(autouse=True)
+def _no_network_by_default(monkeypatch):
+    """The unit suite must never download. Tests that exercise the download
+    path re-patch the seam via _hook."""
+    monkeypatch.setattr(
+        jars, "_download", lambda url, dest: pytest.fail(f"unexpected download of {url}")
+    )
+
+
 @pytest.fixture
 def cache(tmp_path, monkeypatch):
     path = tmp_path / "cache"
@@ -48,6 +57,7 @@ def _hook(monkeypatch, data=JAR_BYTES):
 
 
 def _no_download(monkeypatch):
+    """Re-arms the autouse guard after a test used _hook."""
     monkeypatch.setattr(
         jars, "_download", lambda url, dest: pytest.fail(f"unexpected download of {url}")
     )
@@ -136,6 +146,14 @@ def test_malformed_version_rejected_before_any_io(cache, monkeypatch, version):
         jars.fetch_jar(version, sha256=JAR_SHA)
 
 
+@pytest.mark.parametrize("digest", ["", "nothex", "abc123", JAR_SHA[:-1], JAR_SHA + "0"])
+def test_malformed_sha256_rejected_before_any_io(cache, digest):
+    """An empty or typo'd digest must fail fast — not skip the no-pin
+    refusal, and not cost a full download that ends in a mismatch error."""
+    with pytest.raises(ValueError, match="sha256"):
+        jars.fetch_jar("99.99", sha256=digest)
+
+
 def test_cache_dir_resolution(tmp_path, monkeypatch):
     monkeypatch.setenv("ORLAB_JAR_CACHE", str(tmp_path / "explicit"))
     assert jars.jar_cache_dir() == tmp_path / "explicit"
@@ -174,6 +192,12 @@ def test_chain_cwd_matches_lone_2309(hermetic):
 
 def test_chain_skips_unprofiled_cwd_jar_entirely(hermetic):
     _touch_jars(hermetic, "OpenRocket-26.xx-SNAPSHOT.jar")
+    with pytest.raises(FileNotFoundError):
+        _resolve_default_jar()
+
+
+def test_chain_cwd_ignores_directories(hermetic):
+    (hermetic / "OpenRocket-24.12.jar").mkdir()
     with pytest.raises(FileNotFoundError):
         _resolve_default_jar()
 
@@ -223,9 +247,19 @@ def test_cli_fetch_failure_exit_1_message_on_stderr(cache, monkeypatch, capsys):
 
 
 def test_cli_which_reports_path_and_source(hermetic, monkeypatch, capsys):
-    monkeypatch.setenv("ORLAB_JAR", "/some/explicit.jar")
+    jar = hermetic / "real.jar"
+    jar.write_bytes(b"")
+    monkeypatch.setenv("ORLAB_JAR", str(jar))
     assert main(["which"]) == 0
-    assert capsys.readouterr().out == "/some/explicit.jar (via ORLAB_JAR)\n"
+    assert capsys.readouterr().out == f"{jar} (via ORLAB_JAR)\n"
+
+
+def test_cli_which_flags_dangling_orlab_jar(hermetic, monkeypatch, capsys):
+    """A dangling ORLAB_JAR resolves (env wins) but would fail at boot —
+    which must say so rather than report success silently."""
+    monkeypatch.setenv("ORLAB_JAR", "/gone/OpenRocket.jar")
+    assert main(["which"]) == 0
+    assert capsys.readouterr().out == "/gone/OpenRocket.jar (via ORLAB_JAR) — does not exist\n"
 
 
 def test_cli_which_miss_exit_1(hermetic, capsys):

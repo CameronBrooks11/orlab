@@ -53,6 +53,16 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def _sha256_or_none(path: Path) -> str | None:
+    """The digest, or None if the file vanished or is unreadable — another
+    process evicting concurrently (or the user deleting jars, which the docs
+    bless) must read as 'absent', not crash."""
+    try:
+        return _sha256(path)
+    except OSError:
+        return None
+
+
 def _download(url: str, dest: Path) -> None:
     """Streams url into dest. Test seam: unit tests replace this to avoid
     the network; everything above it (temp file, verify, replace) runs real.
@@ -86,9 +96,14 @@ def _fetch_verified(url: str, path: Path, expected: str) -> None:
     try:
         try:
             _download(url, tmp)
+        except urllib.error.HTTPError as e:
+            # bare urllib errors don't say what they were fetching; keep the
+            # type (a 404 means "no such release", not a network problem)
+            e.msg = f"{e.msg} (downloading {url})"
+            raise
         except urllib.error.URLError as e:
-            # bare urllib errors don't say what they were fetching
-            raise urllib.error.URLError(f"{e} while downloading {url}") from e
+            e.reason = f"{e.reason} (downloading {url})"
+            raise
         digest = _sha256(tmp)
         if digest != expected:
             raise JarVerificationError(
@@ -96,11 +111,15 @@ def _fetch_verified(url: str, path: Path, expected: str) -> None:
             )
         try:
             os.replace(tmp, path)
-        except PermissionError:
+        except PermissionError as e:
             # another process won the race and holds the entry open; if what
             # it put there verifies, use it
-            if not (path.exists() and _sha256(path) == expected):
-                raise
+            if _sha256_or_none(path) != expected:
+                raise PermissionError(
+                    f"cannot update {path}: it is held open by another "
+                    "process and does not match the expected digest; close "
+                    "whatever holds it and retry"
+                ) from e
     finally:
         _evict(tmp)
 
@@ -114,9 +133,10 @@ def _cached_jar(version: str) -> Path | None:
     if pin is None:
         return None
     path = jar_cache_dir() / f"OpenRocket-{version}.jar"
-    if not path.exists():
+    digest = _sha256_or_none(path)
+    if digest is None:
         return None
-    if _sha256(path) != pin:
+    if digest != pin:
         logger.warning("cached %s failed sha256 verification; removing it", path)
         _evict(path)
         return None
@@ -132,9 +152,10 @@ def fetch_jar(version: str | None = None, *, sha256: str | None = None) -> Path:
     version requires ``sha256=`` — compute it yourself from a copy you
     trust; there is no way to skip verification.
 
-    :raises JarVerificationError: no digest to verify against, or a digest
-        mismatch that survived one re-download.
-    :raises ValueError: a malformed version string, or ``sha256=``
+    :raises JarVerificationError: no digest to verify against, or a
+        downloaded jar whose digest does not match (a corrupt cached entry
+        is evicted and re-downloaded once first).
+    :raises ValueError: a malformed version string or digest, or ``sha256=``
         contradicting a shipped pin.
     """
     if version is None:
@@ -143,6 +164,8 @@ def fetch_jar(version: str | None = None, *, sha256: str | None = None) -> Path:
         raise ValueError(f"not an OpenRocket version string: {version!r}")
     if sha256 is not None:
         sha256 = sha256.lower()
+        if not re.fullmatch(r"[0-9a-f]{64}", sha256):
+            raise ValueError(f"not a sha256 hex digest: {sha256!r}")
     pin = PINNED_SHA256.get(version)
     if pin is not None and sha256 is not None and sha256 != pin:
         raise ValueError(
@@ -155,7 +178,8 @@ def fetch_jar(version: str | None = None, *, sha256: str | None = None) -> Path:
     path = cache / f"OpenRocket-{version}.jar"
 
     if expected is None:
-        found = f"\nA cached file exists with sha256 {_sha256(path)}." if path.exists() else ""
+        cached_digest = _sha256_or_none(path)
+        found = f"\nA cached file exists with sha256 {cached_digest}." if cached_digest else ""
         raise JarVerificationError(
             f"orlab {_orlab_version()} has no sha256 pin for OpenRocket {version}, "
             f"so it will not fetch it unverified. Download {url} from a "
@@ -166,9 +190,10 @@ def fetch_jar(version: str | None = None, *, sha256: str | None = None) -> Path:
         )
 
     cache.mkdir(parents=True, exist_ok=True)
-    if path.exists():
-        if _sha256(path) == expected:
-            return path
+    digest = _sha256_or_none(path)
+    if digest == expected:
+        return path
+    if digest is not None:
         logger.warning("cached %s failed sha256 verification; re-downloading", path)
         _evict(path)
     _fetch_verified(url, path, expected)
