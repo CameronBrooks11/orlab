@@ -44,6 +44,7 @@ nav:
       - Flight summaries: guides/summaries.md
       - Monte-carlo studies: guides/monte-carlo.md
       - Working across versions: guides/multi-version.md
+      - Simulation setup: guides/simulation-setup.md
   - API reference: api.md
   - Maintainers: maintainers.md
 

@@ -159,6 +159,42 @@ def verify_manifest(instance, startup):
             lambda c, m=member: _has_method(c, m),
             f"FlightDataBranch.{member}",
         )
+    # motor-swap surface: the era-specific MotorConfiguration accessor, the
+    # uniform config API, the database entry point, and the file loader
+    modern_motors = parse_version(instance.or_version) >= (22, 2)
+    mount_accessor = "getMotorConfig" if modern_motors else "getMotorConfiguration"
+    require_class(
+        core,
+        "rocketcomponent.MotorMount",
+        lambda c, m=mount_accessor: _has_method(c, m),
+        f"MotorMount.{mount_accessor}",
+    )
+    # MotorConfiguration moved packages after 15.03 (rocketcomponent -> motor)
+    config_class = (
+        "motor.MotorConfiguration" if modern_motors else "rocketcomponent.MotorConfiguration"
+    )
+    for member in ("getMotor", "setMotor", "getEjectionDelay", "setEjectionDelay"):
+        require_class(
+            core,
+            config_class,
+            lambda c, m=member: _has_method(c, m),
+            f"MotorConfiguration.{member}",
+        )
+    require_class(
+        core,
+        "startup.Application",
+        lambda c: _has_method(c, "getMotorSetDatabase"),
+        "Application.getMotorSetDatabase",
+    )
+    require_class(core, "file.motor.GeneralMotorLoader")
+    if modern_motors:
+        require_class(
+            core,
+            "motor.ThrustCurveMotor.Builder",
+            lambda c: _has_method(c, "build"),
+            "ThrustCurveMotor.Builder.build",
+        )
+
     if startup == "core":
         require_class(
             core,

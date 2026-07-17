@@ -1,5 +1,6 @@
 import logging
 import math
+import os
 from collections.abc import Iterable
 
 import jpype
@@ -466,6 +467,234 @@ class Helper:
         if values is None:
             return np.array([])
         return np.asarray(values, dtype=float)
+
+    # --- motor selection and swapping ---
+
+    def _motor_mount_interface(self):
+        return jpype.JClass(f"{self._instance.profile.core_root}.rocketcomponent.MotorMount")
+
+    def _sim_fcid(self, sim):
+        """The simulation's OWN flight-configuration id — never the rocket's
+        selected/default config, which the sim may not fly at all (verified:
+        simple.ork's sim flies A8 while the selected config shows C6, and
+        assigning to the selected config is a silent no-op)."""
+        if hasattr(sim, "getFlightConfigurationId"):
+            return sim.getFlightConfigurationId()
+        if hasattr(sim.getOptions(), "getMotorConfigurationID"):  # 15.03
+            return sim.getOptions().getMotorConfigurationID()
+        raise OrlabError(
+            "cannot determine this simulation's flight configuration id on "
+            f"OpenRocket {self._instance.or_version} — the motor API drifted "
+            "beyond both known forms"
+        )
+
+    def _motor_config(self, mount, fcid):
+        """The mount's MotorConfiguration at an fcid. Two accessor eras
+        (probed): getMotorConfig(fcid) on 22.02+, the
+        getMotorConfiguration() map on 15.03. The returned object's own API
+        (getMotor/setMotor/get/setEjectionDelay) is identical on all four
+        versions."""
+        if hasattr(mount, "getMotorConfig"):
+            return mount.getMotorConfig(fcid)
+        if hasattr(mount, "getMotorConfiguration"):
+            return mount.getMotorConfiguration().get(fcid)
+        raise OrlabError(
+            "no known motor-configuration accessor on this mount "
+            f"(OpenRocket {self._instance.or_version})"
+        )
+
+    def _resolve_mount(self, sim, mount_name):
+        """The motor mount to operate on: by name, else the unique mount
+        carrying a motor in the sim's config, else the unique MotorMount.
+        Candidate enumeration filters via the MotorMount INTERFACE before
+        calling isMotorMount() — most 15.03 components lack the method
+        entirely while all 24.12 components have it (probed)."""
+        interface = self._motor_mount_interface()
+        rocket = sim.getRocket()
+        if mount_name is not None:
+            if isinstance(mount_name, str):
+                component = self.get_component_named(rocket, mount_name)
+            else:
+                component = mount_name  # a mount object works directly
+            if not isinstance(component, interface) or not component.isMotorMount():
+                raise ValueError(f"{mount_name} is not an active motor mount")
+            return component
+        candidates = [c for c in JIterator(rocket) if isinstance(c, interface) and c.isMotorMount()]
+        if not candidates:
+            raise ValueError("this rocket has no active motor mount")
+        if len(candidates) == 1:
+            return candidates[0]
+        fcid = self._sim_fcid(sim)
+        bearing = []
+        for candidate in candidates:
+            config = self._motor_config(candidate, fcid)
+            if config is not None and config.getMotor() is not None:
+                bearing.append(candidate)
+        if len(bearing) == 1:
+            return bearing[0]
+        names = sorted(str(c.getName()) for c in candidates)
+        raise ValueError(f"ambiguous motor mount — pass mount= (candidates: {', '.join(names)})")
+
+    def get_motor(self, sim, mount=None) -> str | None:
+        """The designation of the motor the simulation would fly on the
+        given (or auto-resolved) mount, as a plain string; None when the
+        sim's configuration has no motor there.
+        """
+        resolved = self._resolve_mount(sim, mount)
+        config = self._motor_config(resolved, self._sim_fcid(sim))
+        motor = config.getMotor() if config is not None else None
+        return str(motor.getDesignation()) if motor is not None else None
+
+    def find_motor(self, designation: str, manufacturer: str | None = None):
+        """A motor from OpenRocket's own database by designation
+        (case-insensitive exact). Common hobby designations (A8, B6, C6…)
+        exist from several manufacturers — those lookups require
+        ``manufacturer=`` (motor choice is safety-relevant; orlab refuses to
+        guess); manufacturer matching uses OpenRocket's own alias machinery,
+        so "CTI" finds Cesaroni. One manufacturer's designation can span
+        several motor sets (different diameters/lengths): sets are ordered
+        by diameter, then length, and the first variant of the first set is
+        returned — OpenRocket keeps each set's variants deterministically
+        sorted, so 'the' motor is stable across runs.
+
+        :raises ValueError: no match (message lists near-matches), a
+            designation that exists but not from the given manufacturer, or
+            an ambiguous designation without ``manufacturer=``.
+        """
+        wanted = designation.strip().lower()
+        database = self.openrocket.startup.Application.getMotorSetDatabase()
+        matches = [
+            s for s in database.getMotorSets() if str(s.getDesignation()).strip().lower() == wanted
+        ]
+        if manufacturer is not None and matches:
+            # OpenRocket's Manufacturer.matches handles display/simple names
+            # and aliases (CTI, CES, ...) on every supported version
+            filtered = [s for s in matches if s.getManufacturer().matches(manufacturer)]
+            if not filtered:
+                available = sorted({str(s.getManufacturer().getDisplayName()) for s in matches})
+                raise ValueError(
+                    f"{designation!r} exists, but not from {manufacturer!r} "
+                    f"(available: {', '.join(available)})"
+                )
+            matches = filtered
+        if not matches:
+            near = sorted(
+                {
+                    str(s.getDesignation())
+                    for s in database.getMotorSets()
+                    if wanted in str(s.getDesignation()).lower()
+                    or str(s.getDesignation()).lower() in wanted
+                }
+            )[:10]
+            hint = f"; near matches: {', '.join(near)}" if near else ""
+            raise ValueError(f"no motor matches designation {designation!r}{hint}")
+        makers = sorted({str(s.getManufacturer().getDisplayName()) for s in matches})
+        if len(makers) > 1:
+            raise ValueError(
+                f"{designation!r} exists from several manufacturers "
+                f"({', '.join(makers)}) — pass manufacturer="
+            )
+        # deterministic set choice by intrinsic geometry; the set's own
+        # variant list is already deterministically sorted by OpenRocket
+        chosen = min(
+            matches,
+            key=lambda s: (float(s.getDiameter()), float(s.getLength()), str(s.getType())),
+        )
+        return chosen.getMotors()[0]
+
+    def load_motor(self, motor_file, designation: str | None = None):
+        """A motor loaded from a thrust-curve file (.eng/.rse/.zip) via
+        OpenRocket's own loader — no database needed, works on every
+        supported version and startup path. Files holding several motors
+        need ``designation=`` to pick one.
+
+        :raises OrlabError: the file doesn't parse as a motor file.
+        """
+        path = os.fspath(motor_file)
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"No such motor file: {path}")
+        loader = self.openrocket.file.motor.GeneralMotorLoader()
+        stream = jpype.java.io.FileInputStream(path)
+        try:
+            loaded = list(loader.load(stream, os.path.basename(path)))
+        except Exception as e:
+            raise OrlabError(f"{path} did not parse as a motor file ({e})") from e
+        finally:
+            stream.close()
+        motors = [m.build() if hasattr(m, "build") else m for m in loaded]
+        if not motors:
+            raise OrlabError(f"{path} holds no motors")
+        if designation is not None:
+            wanted = designation.strip().lower()
+            selected = [m for m in motors if str(m.getDesignation()).strip().lower() == wanted]
+            if not selected:
+                names = sorted(str(m.getDesignation()) for m in motors)
+                raise ValueError(
+                    f"{path} holds no motor designated {designation!r} "
+                    f"(it holds: {', '.join(names)})"
+                )
+            motors = selected
+        elif len(motors) > 1:
+            names = sorted(str(m.getDesignation()) for m in motors)
+            raise ValueError(
+                f"{path} holds {len(names)} motors ({', '.join(names)}) — pass designation="
+            )
+        return motors[0]
+
+    def set_motor(
+        self,
+        sim,
+        motor,
+        *,
+        mount=None,
+        manufacturer: str | None = None,
+        designation: str | None = None,
+        delay: float | None = None,
+    ) -> None:
+        """Sets the motor the simulation will actually fly — always keyed on
+        the sim's own flight configuration (assigning to the rocket's
+        *selected* config is the ecosystem's classic silent failure). The
+        motor argument is a designation string (database lookup, see
+        :meth:`find_motor`), a ``.eng``/``.rse``/``.zip`` path (file load,
+        see :meth:`load_motor`), or a ThrustCurveMotor object. ``delay=``
+        sets the ejection delay in seconds; None preserves the existing one.
+        The assignment is read back and verified — a mismatch raises instead
+        of failing silently.
+        """
+        if isinstance(motor, (str, os.PathLike)):
+            text = os.fspath(motor)
+            if text.lower().endswith((".eng", ".rse", ".zip")):
+                if manufacturer is not None:
+                    raise ValueError("manufacturer= does not apply to a motor file")
+                motor = self.load_motor(text, designation=designation)
+            else:
+                if designation is not None:
+                    raise ValueError(
+                        "designation= selects a motor from a multi-motor "
+                        "FILE; for database lookups the designation IS the "
+                        "motor argument"
+                    )
+                motor = self.find_motor(text, manufacturer=manufacturer)
+        target_designation = str(motor.getDesignation())
+
+        resolved = self._resolve_mount(sim, mount)
+        fcid = self._sim_fcid(sim)
+        config = self._motor_config(resolved, fcid)
+        if config is None:
+            raise OrlabError(
+                f"mount {resolved.getName()} has no motor configuration for "
+                "this simulation's flight configuration"
+            )
+        config.setMotor(motor)
+        if delay is not None:
+            config.setEjectionDelay(float(delay))
+
+        readback = self.get_motor(sim, mount=mount)
+        if readback != target_designation:
+            raise OrlabError(
+                f"motor assignment did not stick: set {target_designation}, "
+                f"read back {readback} (wrong mount or flight configuration?)"
+            )
 
     def get_component_named(self, root, name):
         """Finds and returns the first rocket component with the given name.

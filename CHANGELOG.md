@@ -7,6 +7,27 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Added
+
+- Motor selection and swapping: `Helper.set_motor(sim, motor)` changes the
+  motor a simulation actually flies — by database designation
+  (`find_motor`, which requires `manufacturer=` for the common hobby
+  designations that exist from several makers), from a `.eng`/`.rse`/`.zip`
+  thrust-curve file (`load_motor`, no database involved), or as a motor
+  object — always keyed on the simulation's own flight configuration and
+  read back afterwards. Raw assignment to the rocket's *selected*
+  configuration succeeds and silently does nothing to the simulation (the
+  ecosystem's classic dispersion bug — now pinned by an integration test
+  on every version); `get_motor(sim)` reports the flying designation.
+  `delay=` sets the ejection delay in seconds. Works on all four
+  supported versions including 24.12 headless (the motor database loads
+  fully there; only component presets are affected by the upstream gap).
+- Docs: "Simulation setup" guide page (motor swapping, the verified
+  one-liner setters, SI units).
+- The profile contract manifest checks the motor surface per version —
+  including the MotorConfiguration package move after 15.03 and the two
+  mount-accessor eras — and the monthly canary runs the motor case.
+
 ## [0.8.0] — 2026-07-17
 
 ### Added

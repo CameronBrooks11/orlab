@@ -93,6 +93,18 @@ jobs:
           assert result["apogee"] > 10, result
           print("CANARY declarative OK")
           EOF
+          uv run python tests/integration/cases/motor_swap.py "OpenRocket-$VERSION.jar" | tee motor.out
+          grep '^RESULT ' motor.out | sed 's/^RESULT //' > motor.json
+          python3 - <<'EOF'
+          import json
+
+          result = json.load(open("motor.json"))
+          assert result["initial"] == "A8", result
+          assert result["c6"]["designation"] == "C6", result
+          assert result["c6"]["apogee"] > result["stock_apogee"] * 2, result
+          assert result["eng"]["designation"] == "ORLAB45", result
+          print("CANARY motor OK")
+          EOF
 
   file-issue:
     runs-on: ubuntu-latest

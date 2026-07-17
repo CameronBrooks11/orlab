@@ -321,3 +321,36 @@ def test_pool_composes_with_parent_jvm_and_summaries(jar):
     assert result["pool_ok"] == 3
     assert result["payload_type"] == "FlightSummary"
     assert result["windy_drifts_more"] and result["fields_finite"]
+
+
+def test_motor_swap(jar):
+    """The sim-fcid rule end to end: raw assignment to the rocket's selected
+    config leaves the flight unchanged (the silent no-op, pinned forever),
+    set_motor moves apogee materially via DB and .eng-file motors, and
+    delay= shifts deployment relative to burnout by the delay difference."""
+    version, path = jar
+    result = run_case("motor_swap.py", path)
+
+    assert result["initial"] == "A8"
+    assert 40 < result["stock_apogee"] < 60
+    # the divergence must EXIST (probed on all four) or this test tests nothing
+    assert result["fcids_differ"], "sim now flies the selected config — no-op pin is vacuous"
+    # wrong-config assignment must not move the sim's own flight
+    assert abs(result["after_wrong_fcid"] - result["stock_apogee"]) < 0.5
+    assert result["c6"]["designation"] == "C6"
+    assert 200 < result["c6"]["apogee"] < 400
+    assert result["eng"]["designation"] == "ORLAB45"
+    assert 550 < result["eng"]["apogee"] < 850  # probed 688-700 across versions
+    # 5s vs 2s ejection delay: deployment moves ~3s later relative to burnout
+    assert 2.0 < result["eng"]["deploy_delta"] < 4.0
+    assert result["delay_preserved"] == pytest.approx(5.0)  # delay=None preserves
+
+
+def test_motor_db_cold_start(jar):
+    """find_motor as the first operation in a fresh process returns from a
+    fully loaded database on every version and startup path."""
+    _, path = jar
+    result = run_case("cold_start_motor_db.py", path)
+    assert result["designation"] == "C6"
+    assert result["sets"] > 1000
+    assert result["first_lookup_s"] < 30
