@@ -30,9 +30,11 @@ motor database (fully loaded on every supported version and startup path,
 including 24.12 headless). Common hobby designations exist from several
 manufacturers — A8, B6, C6 all do — so those lookups **require**
 `manufacturer=`: motor choice is safety-relevant and orlab refuses to
-guess. When a matched set holds several variants, the first under a stable
-sort of the motors' string forms is returned, so "the" motor is
-deterministic run to run. A miss raises with up to ten near-matches named.
+guess. One manufacturer's designation can span several motor
+sets (different diameters); sets are ordered by diameter then length, and
+OpenRocket keeps each set's variants deterministically sorted — so "the"
+motor is stable run to run. Manufacturer matching uses OpenRocket's own
+alias machinery ("CTI" finds Cesaroni). A miss raises with up to ten near-matches named.
 
 ### Thrust-curve files
 

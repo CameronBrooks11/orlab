@@ -33,11 +33,13 @@ class _Config:
 
 
 class _ModernMount:
-    """22.02+ era: getMotorConfig(fcid)."""
+    """22.02+ era: getMotorConfig(fcid). Records the fcids it was asked
+    about — the sim's OWN id must be passed through opaquely."""
 
     def __init__(self, name, motor=None, active=True):
         self._name, self._active = name, active
         self.config = _Config(motor)
+        self.seen_fcids = []
 
     def getName(self):
         return self._name
@@ -46,6 +48,7 @@ class _ModernMount:
         return self._active
 
     def getMotorConfig(self, fcid):
+        self.seen_fcids.append(fcid)
         return self.config
 
 
@@ -55,6 +58,7 @@ class _LegacyMount:
     def __init__(self, name, motor=None, active=True):
         self._name, self._active = name, active
         self.config = _Config(motor)
+        self.seen_fcids = []
 
     def getName(self):
         return self._name
@@ -63,7 +67,11 @@ class _LegacyMount:
         return self._active
 
     def getMotorConfiguration(self):
-        return SimpleNamespace(get=lambda fcid: self.config)
+        def get(fcid):
+            self.seen_fcids.append(fcid)
+            return self.config
+
+        return SimpleNamespace(get=get)
 
 
 class _PlainComponent:
@@ -138,6 +146,31 @@ def test_legacy_map_accessor_era():
     sim.getOptions = lambda: SimpleNamespace(getMotorConfigurationID=lambda: "cfg-1503")
     del sim.getFlightConfigurationId
     assert h.get_motor(sim) == "A8"
+    assert set(mount.seen_fcids) == {"cfg-1503"}  # the sim's own id, opaque
+
+
+def test_modern_fcid_passed_through_opaquely():
+    mount = _ModernMount("Inner Tube", motor=_Motor("A8"))
+    h, sim, _ = _helper([mount], (_ModernMount,))
+    assert h.get_motor(sim) == "A8"
+    assert set(mount.seen_fcids) == {"fcid-1"}
+
+
+def test_mount_object_accepted_directly():
+    mount = _ModernMount("Inner Tube", motor=_Motor("A8"))
+    h, sim, _ = _helper([mount], (_ModernMount,))
+    assert h._resolve_mount(sim, mount) is mount
+
+
+def test_conflicting_kwargs_rejected(tmp_path):
+    mount = _ModernMount("Inner Tube", motor=_Motor("A8"))
+    h, sim, _ = _helper([mount], (_ModernMount,))
+    h.load_motor = lambda path, designation=None: _Motor("X")
+    h.find_motor = lambda d, manufacturer=None: _Motor("X")
+    with pytest.raises(ValueError, match="manufacturer"):
+        h.set_motor(sim, tmp_path / "m.eng", manufacturer="Estes")
+    with pytest.raises(ValueError, match="designation"):
+        h.set_motor(sim, "C6", designation="C6")
 
 
 def test_no_known_accessor_curated_error():
@@ -169,7 +202,8 @@ def test_set_motor_dispatch_and_readback(tmp_path, monkeypatch):
     h.load_motor = lambda path, designation=None: (seen.append(path), _Motor("ORLAB45"))[1]
     h.set_motor(sim, tmp_path / "curve.ENG")
     h.set_motor(sim, str(tmp_path / "curve.rse"))
-    assert len(seen) == 2 and h.get_motor(sim) == "ORLAB45"
+    h.set_motor(sim, str(tmp_path / "bundle.zip"))
+    assert len(seen) == 3 and h.get_motor(sim) == "ORLAB45"
 
 
 def test_set_motor_readback_mismatch_raises():

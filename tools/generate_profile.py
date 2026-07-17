@@ -187,6 +187,13 @@ def verify_manifest(instance, startup):
         "Application.getMotorSetDatabase",
     )
     require_class(core, "file.motor.GeneralMotorLoader")
+    if modern_motors:
+        require_class(
+            core,
+            "motor.ThrustCurveMotor.Builder",
+            lambda c: _has_method(c, "build"),
+            "ThrustCurveMotor.Builder.build",
+        )
 
     if startup == "core":
         require_class(

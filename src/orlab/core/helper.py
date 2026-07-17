@@ -512,7 +512,10 @@ class Helper:
         interface = self._motor_mount_interface()
         rocket = sim.getRocket()
         if mount_name is not None:
-            component = self.get_component_named(rocket, mount_name)
+            if isinstance(mount_name, str):
+                component = self.get_component_named(rocket, mount_name)
+            else:
+                component = mount_name  # a mount object works directly
             if not isinstance(component, interface) or not component.isMotorMount():
                 raise ValueError(f"{mount_name} is not an active motor mount")
             return component
@@ -547,32 +550,40 @@ class Helper:
         (case-insensitive exact). Common hobby designations (A8, B6, C6…)
         exist from several manufacturers — those lookups require
         ``manufacturer=`` (motor choice is safety-relevant; orlab refuses to
-        guess). Within a matched set holding several variants, the first
-        under a stable sort of the motors' string forms is returned —
-        documented so 'the' motor is deterministic.
+        guess); manufacturer matching uses OpenRocket's own alias machinery,
+        so "CTI" finds Cesaroni. One manufacturer's designation can span
+        several motor sets (different diameters/lengths): sets are ordered
+        by diameter, then length, and the first variant of the first set is
+        returned — OpenRocket keeps each set's variants deterministically
+        sorted, so 'the' motor is stable across runs.
 
-        :raises ValueError: no match (message lists near-matches), or an
-            ambiguous designation without ``manufacturer=``.
+        :raises ValueError: no match (message lists near-matches), a
+            designation that exists but not from the given manufacturer, or
+            an ambiguous designation without ``manufacturer=``.
         """
         wanted = designation.strip().lower()
         database = self.openrocket.startup.Application.getMotorSetDatabase()
         matches = [
             s for s in database.getMotorSets() if str(s.getDesignation()).strip().lower() == wanted
         ]
-        if manufacturer is not None:
-            maker = manufacturer.strip().lower()
-            matches = [
-                s
-                for s in matches
-                if str(s.getManufacturer().getDisplayName()).strip().lower() == maker
-                or str(s.getManufacturer().getSimpleName()).strip().lower() == maker
-            ]
+        if manufacturer is not None and matches:
+            # OpenRocket's Manufacturer.matches handles display/simple names
+            # and aliases (CTI, CES, ...) on every supported version
+            filtered = [s for s in matches if s.getManufacturer().matches(manufacturer)]
+            if not filtered:
+                available = sorted({str(s.getManufacturer().getDisplayName()) for s in matches})
+                raise ValueError(
+                    f"{designation!r} exists, but not from {manufacturer!r} "
+                    f"(available: {', '.join(available)})"
+                )
+            matches = filtered
         if not matches:
             near = sorted(
                 {
                     str(s.getDesignation())
                     for s in database.getMotorSets()
                     if wanted in str(s.getDesignation()).lower()
+                    or str(s.getDesignation()).lower() in wanted
                 }
             )[:10]
             hint = f"; near matches: {', '.join(near)}" if near else ""
@@ -583,8 +594,13 @@ class Helper:
                 f"{designation!r} exists from several manufacturers "
                 f"({', '.join(makers)}) — pass manufacturer="
             )
-        motors = sorted(matches[0].getMotors(), key=str)
-        return motors[0]
+        # deterministic set choice by intrinsic geometry; the set's own
+        # variant list is already deterministically sorted by OpenRocket
+        chosen = min(
+            matches,
+            key=lambda s: (float(s.getDiameter()), float(s.getLength()), str(s.getType())),
+        )
+        return chosen.getMotors()[0]
 
     def load_motor(self, motor_file, designation: str | None = None):
         """A motor loaded from a thrust-curve file (.eng/.rse/.zip) via
@@ -610,12 +626,17 @@ class Helper:
             raise OrlabError(f"{path} holds no motors")
         if designation is not None:
             wanted = designation.strip().lower()
-            motors = [m for m in motors if str(m.getDesignation()).strip().lower() == wanted]
-            if not motors:
-                raise ValueError(f"{path} holds no motor designated {designation!r}")
+            selected = [m for m in motors if str(m.getDesignation()).strip().lower() == wanted]
+            if not selected:
+                names = sorted(str(m.getDesignation()) for m in motors)
+                raise ValueError(
+                    f"{path} holds no motor designated {designation!r} "
+                    f"(it holds: {', '.join(names)})"
+                )
+            motors = selected
         elif len(motors) > 1:
             names = sorted(str(m.getDesignation()) for m in motors)
-            raise OrlabError(
+            raise ValueError(
                 f"{path} holds {len(names)} motors ({', '.join(names)}) — pass designation="
             )
         return motors[0]
@@ -643,8 +664,16 @@ class Helper:
         if isinstance(motor, (str, os.PathLike)):
             text = os.fspath(motor)
             if text.lower().endswith((".eng", ".rse", ".zip")):
+                if manufacturer is not None:
+                    raise ValueError("manufacturer= does not apply to a motor file")
                 motor = self.load_motor(text, designation=designation)
             else:
+                if designation is not None:
+                    raise ValueError(
+                        "designation= selects a motor from a multi-motor "
+                        "FILE; for database lookups the designation IS the "
+                        "motor argument"
+                    )
                 motor = self.find_motor(text, manufacturer=manufacturer)
         target_designation = str(motor.getDesignation())
 

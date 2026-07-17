@@ -40,6 +40,8 @@ def main(jar_path):
         selected_fcid = None
         if hasattr(rocket, "getSelectedConfiguration"):
             selected_fcid = rocket.getSelectedConfiguration().getId()
+        elif hasattr(rocket, "getDefaultConfiguration"):  # 15.03
+            selected_fcid = rocket.getDefaultConfiguration().getFlightConfigurationID()
         sim_fcid = orl._sim_fcid(sim)
         out["fcids_differ"] = selected_fcid is not None and str(selected_fcid) != str(sim_fcid)
         if selected_fcid is not None:
@@ -61,6 +63,10 @@ def main(jar_path):
         orl.set_motor(sim, str(ENG), delay=5.0)
         summary_long = run(orl, sim)
         events_long = orl.get_events(sim)
+        # re-setting without delay= must preserve the configured delay
+        orl.set_motor(sim, str(ENG))
+        cfg = orl._motor_config(orl._resolve_mount(sim, None), orl._sim_fcid(sim))
+        out["delay_preserved"] = float(cfg.getEjectionDelay())
         deploy_short = events_short[orlab.FlightEvent.RECOVERY_DEVICE_DEPLOYMENT][0]
         deploy_long = events_long[orlab.FlightEvent.RECOVERY_DEVICE_DEPLOYMENT][0]
         burnout_short = events_short[orlab.FlightEvent.BURNOUT][0]

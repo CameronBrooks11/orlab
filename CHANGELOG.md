@@ -12,7 +12,7 @@ reconstructed from the git log.
 - Motor selection and swapping: `Helper.set_motor(sim, motor)` changes the
   motor a simulation actually flies — by database designation
   (`find_motor`, which requires `manufacturer=` for the common hobby
-  designations that exist from several makers), from a `.eng`/`.rse`
+  designations that exist from several makers), from a `.eng`/`.rse`/`.zip`
   thrust-curve file (`load_motor`, no database involved), or as a motor
   object — always keyed on the simulation's own flight configuration and
   read back afterwards. Raw assignment to the rocket's *selected*
