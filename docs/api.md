@@ -1,6 +1,6 @@
 # API reference
 
-The public surface is the eight names importable from `orlab`, plus the
+The public surface is the nine names importable from `orlab`, plus the
 exception types in `orlab.errors` and the jar utilities in `orlab.jars`.
 Everything else is internal.
 
@@ -19,6 +19,10 @@ Everything else is internal.
 ## JIterator
 
 ::: orlab.JIterator
+
+## FlightSummary
+
+::: orlab.FlightSummary
 
 ## Jar management
 

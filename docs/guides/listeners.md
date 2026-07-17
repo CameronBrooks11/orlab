@@ -62,12 +62,11 @@ anything: `status.getSimulationTime()`, `status.getRocketPosition()`,
    simulation and re-raises from `run_simulation` as the original Python
    exception. Raising is a legitimate way to abort a run early.
 
-## Worked examples
+## Worked example
 
 [`examples/simple_ork/monte_carlo.py`](https://github.com/CameronBrooks11/orlab/blob/main/examples/simple_ork/monte_carlo.py)
-uses both patterns in one study:
-
-- `AirStart` overrides `startSimulation` to lift the rocket to a randomized
-  starting altitude (`status.setRocketPosition(...)`).
-- `LandingPoint` overrides `endSimulation` to record the landing
-  coordinates into shared lists.
+uses a listener to *change* the flight — `AirStart` overrides
+`startSimulation` to lift the rocket to a randomized starting altitude
+(`status.setRocketPosition(...)`) — and reads the results back through
+[`get_summary`](summaries.md) rather than a listener: extracting data
+after the run rarely needs one.

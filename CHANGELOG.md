@@ -7,6 +7,28 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Added
+
+- Flight summaries: `Helper.get_summary(sim, branch_number=0)` returns a
+  `FlightSummary` — apogee, max velocity/acceleration/Mach, rail-exit and
+  deployment velocities, stability windowed from rod departure to apogee
+  (OpenRocket 24.12 computes stability through post-apogee tumble, where
+  unwindowed minima are meaningless), descent rate, flat-earth landing
+  position/distance/compass bearing, flight time, optimum delay (23.09+),
+  and warnings. All values are builtin Python types (never Java/numpy), so
+  summaries pickle cleanly into JVM-less processes; missing values are NaN,
+  with one warning per process when the cause is the loaded OpenRocket
+  version rather than the flight. `print(summary)` renders a sectioned
+  report; `to_dict()` is a dispersion-table row.
+- `Helper.get_events(sim, branch_number=0)`: events per stage branch
+  (default unchanged).
+- Docs: "Flight summaries" guide page; `monte_carlo.py` example reads
+  landing points through `get_summary` instead of a hand-rolled listener
+  and flat-earth math.
+- The profile contract manifest now checks the FlightData summary getters
+  and branch accessors on every profile regeneration, and the monthly
+  canary also runs the summary case against the newest upstream release.
+
 ## [0.6.0] — 2026-07-17
 
 ### Added

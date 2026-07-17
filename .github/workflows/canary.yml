@@ -55,6 +55,21 @@ jobs:
               )
           print("CANARY OK:", result["version"], "apogee", result["apogee"])
           EOF
+          uv run python tests/integration/cases/summary.py "OpenRocket-$VERSION.jar" | tee summary.out
+          grep '^RESULT ' summary.out | sed 's/^RESULT //' > summary.json
+          python3 - <<'EOF'
+          import math
+          import json
+
+          calm = json.load(open("summary.json"))["calm"]
+          # coarse bands: this runs against unknown future releases
+          assert 10 < calm["apogee"] < 200, calm
+          assert not math.isnan(calm["min_stability_cal"]), calm
+          assert -2 < calm["min_stability_cal"] < 10, calm
+          assert not math.isnan(calm["descent_rate"]), calm
+          assert calm["landing_distance"] < 5, calm
+          print("CANARY summary OK: apogee", calm["apogee"])
+          EOF
 
       - name: Open an issue on failure
         if: failure()
