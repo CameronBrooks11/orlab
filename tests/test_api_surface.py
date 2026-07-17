@@ -10,6 +10,7 @@ def test_public_surface_stable():
         "JIterator",
         "OpenRocketInstance",
         "OrLogLevel",
+        "SimulationPool",
         "fetch_jar",
     ]
     for name in orlab.__all__:
@@ -24,6 +25,7 @@ def test_errors_surface_stable():
         "JarVerificationError",
         "NotAnOpenRocketJar",
         "OrlabError",
+        "StudyAborted",
         "UnsupportedFlightDataType",
         "UnsupportedOpenRocketVersion",
     ]
@@ -50,7 +52,14 @@ def test_parallel_surface_stable():
     import orlab.parallel
     from orlab.parallel import DECLARATIVE_KEYS, DeclarativeKey
 
-    assert sorted(orlab.parallel.__all__) == ["DECLARATIVE_KEYS", "DeclarativeKey"]
+    assert sorted(orlab.parallel.__all__) == [
+        "DECLARATIVE_KEYS",
+        "DeclarativeKey",
+        "SimError",
+        "SimResult",
+        "SimulationPool",
+        "StudyResult",
+    ]
     expected = {
         "launch_rod_length": DeclarativeKey("setLaunchRodLength", "getLaunchRodLength", float, "m"),
         "launch_rod_angle": DeclarativeKey("setLaunchRodAngle", "getLaunchRodAngle", float, "rad"),

@@ -9,6 +9,25 @@ reconstructed from the git log.
 
 ### Added
 
+- Parallel dispersion runner: `orlab.SimulationPool(ork_file, jar_path)`
+  runs studies across spawn-based worker processes — one JVM and one
+  loaded document per worker. Tasks are plain mappings of the declarative
+  keys (validated up front, including the rod-direction/into-wind
+  interaction) plus an optional pinned `seed`, or an importable
+  `worker_fn(helper, sim, task)` for anything beyond the whitelist.
+  Results are plain-Python `SimResult`/`StudyResult` records
+  (`to_records()` feeds `pandas.DataFrame` directly); per-task failures
+  are `SimError` data carrying the Python traceback and the Java stack;
+  interrupts, worker crashes, and worker-boot failures raise
+  `orlab.errors.StudyAborted` with the partial results preserved. Every
+  task gets a unique pool-assigned 31-bit seed (Java's own randomization
+  collides at 10k-run scale), read back after the run so any result can
+  be replayed. Progress is a `(done, total)` callback, tqdm-compatible
+  without a tqdm dependency. Workers restore the document's option
+  baseline between tasks, ignore SIGINT (the parent owns ^C — verified
+  live against running JVM workers), and discard stdout on POSIX by
+  default (`worker_stdout="inherit"` to keep it; best-effort on Windows).
+
 - `orlab.parallel.DECLARATIVE_KEYS`: the curated set of `SimulationOptions`
   knobs verified to apply-and-read-back identically on every supported
   OpenRocket version — launch rod length/angle/direction, launch-into-wind,
