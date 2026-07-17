@@ -47,5 +47,8 @@ def test_same_jar_reuses_running_jvm(tmp_path, monkeypatch):
     assert instance.started
     assert instance.openrocket is sentinel
 
+    # __exit__ bookkeeping without a live JVM (the fake isJVMStarted would
+    # otherwise send it into real java.awt imports)
+    monkeypatch.setattr(oi.jpype, "isJVMStarted", lambda: False)
     instance.__exit__(None, None, None)
     assert not instance.started
