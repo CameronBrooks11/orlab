@@ -124,11 +124,16 @@ class StudyResult:
 
     def to_records(self) -> list[dict]:
         """Flat dicts (task keys + payload + seed/index) — a dispersion
-        table is ``pandas.DataFrame(study.to_records())``."""
+        table is ``pandas.DataFrame(study.to_records())``. Column precedence
+        on name collisions: the reserved ``index``/``seed``/
+        ``seed_reassigned`` columns override task keys, and payload keys
+        override both (the declarative path is collision-free by
+        construction)."""
         records = []
         for r in self.results:
-            record = {"index": r.index, "seed": r.seed}
-            record.update(r.task)
+            record = dict(r.task)
+            # reserved columns win over task keys; payload keys win last
+            record.update(index=r.index, seed=r.seed, seed_reassigned=r.seed_reassigned)
             if isinstance(r.payload, dict):
                 record.update(r.payload)
             else:
@@ -166,11 +171,13 @@ def _worker_init(cfg: dict) -> None:
             # fakes instead of booting a JVM
             cfg["_test_init"](_WORKER)
             return
-        if cfg["worker_stdout"] == "discard" and os.name == "posix":
-            # silences the JVM's native stdout too; no effect on the JVM's
-            # handle on Windows (documented best-effort there)
+        if cfg["worker_stdout"] == "discard":
+            # POSIX: silences everything including the JVM's native stdout.
+            # Windows: silences Python/CRT writes; the JVM's native handle
+            # is unreachable (documented best-effort).
             devnull = os.open(os.devnull, os.O_WRONLY)
             os.dup2(devnull, 1)
+            os.close(devnull)
         import orlab
 
         instance = orlab.OpenRocketInstance(
@@ -348,10 +355,13 @@ class SimulationPool:
     def _validate_declarative(tasks: list[dict]) -> None:
         keysets = {frozenset(t) - {"seed"} for t in tasks}
         if len(keysets) > 1:
-            smallest, largest = min(keysets, key=len), max(keysets, key=len)
+            union = frozenset().union(*keysets)
+            common = frozenset(union)
+            for keys in keysets:
+                common &= keys
             raise ValueError(
-                "declarative tasks must share one key set; found differing "
-                f"sets (e.g. {sorted(largest - smallest)} not in every task)"
+                "declarative tasks must share one key set; "
+                f"{sorted(union - common)} appear in some tasks but not all"
             )
         keys = keysets.pop() if keysets else frozenset()
         unknown = keys - set(DECLARATIVE_KEYS)
@@ -417,6 +427,8 @@ class SimulationPool:
         """Unique 31-bit seeds per task (Java's own randomizeSeed draws a
         full 32-bit space where 10k-run studies collide by birthday
         statistics); task['seed'] overrides."""
+        # note: several tasks pinning the SAME seed are honored verbatim —
+        # uniqueness is guaranteed only for derived seeds
         rng = random.Random(seed) if seed is not None else random.SystemRandom()
         used: set[int] = {t["seed"] for t in tasks if "seed" in t}
         seeds = []
@@ -440,8 +452,9 @@ class SimulationPool:
         if self._executor is None:
             workers = self._max_workers
             if workers is None:
-                workers = min(4, os.cpu_count() or 1)
-            workers = max(1, min(workers, task_count))
+                # the default is sized to the first run; an explicit value is
+                # respected verbatim (idle workers just idle)
+                workers = max(1, min(min(4, os.cpu_count() or 1), task_count))
             kwargs: dict = {
                 "max_workers": workers,
                 "mp_context": multiprocessing.get_context("spawn"),
@@ -483,10 +496,21 @@ class SimulationPool:
         """
         if on_error not in ("collect", "abort"):
             raise ValueError("on_error must be 'collect' or 'abort'")
+        if isinstance(tasks, bool):
+            raise TypeError("tasks must be an iterable of mappings or an int")
         if isinstance(tasks, int):
+            if tasks < 0:
+                raise ValueError(f"cannot run {tasks} simulations")
             task_list: list[dict] = [{} for _ in range(tasks)]
         else:
-            task_list = [dict(t) for t in tasks]
+            try:
+                task_list = [dict(t) for t in tasks]
+            except (TypeError, ValueError) as e:
+                raise TypeError(
+                    "tasks must be an iterable of mappings or an int "
+                    f"(got {type(tasks).__name__}); did you pass a single "
+                    "mapping instead of a list?"
+                ) from e
         if worker_fn is None:
             self._validate_declarative(task_list)
         else:
@@ -494,6 +518,13 @@ class SimulationPool:
                 if "seed" in task:
                     self._validate_declarative([{"seed": task["seed"]}])
             self._validate_worker_fn(worker_fn)
+            try:
+                pickle.dumps(task_list)
+            except Exception as e:
+                raise ValueError(
+                    f"tasks are not picklable ({e}); worker_fn tasks must "
+                    "hold plain-Python data only"
+                ) from e
         if not task_list:
             return StudyResult((), ())
         seeds = self._derive_seeds(task_list, seed)
@@ -514,19 +545,26 @@ class SimulationPool:
                 self._executor.shutdown(wait=False, cancel_futures=True)
                 self._executor = None
 
-        futures: dict = {}
+        futures: list = []
         try:
             executor = self._ensure_executor(total)
             for index, task in enumerate(task_list):
-                futures[executor.submit(_worker_run, index, task, seeds[index], worker_fn)] = index
+                futures.append(executor.submit(_worker_run, index, task, seeds[index], worker_fn))
             if progress is not None:
-                progress(0, total)
+                try:
+                    progress(0, total)
+                except BaseException:
+                    for f in futures:
+                        f.cancel()
+                    raise
             for done, future in enumerate(as_completed(futures), start=1):
                 outcome = future.result()
                 kind = outcome[0]
                 if kind == "init_error":
                     for f in futures:
                         f.cancel()
+                    kill_pool()  # init config is identical across workers:
+                    # every worker holds an unusable JVM — release them
                     raise StudyAborted(
                         "worker-init",
                         partial(),

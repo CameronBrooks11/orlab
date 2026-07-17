@@ -130,6 +130,9 @@ print(frame[["wind_speed_average", "apogee"]].describe())
 - Each worker holds a JVM: budget roughly **0.5–0.7 GB per worker with
   `jvm_args=("-Xmx512m",)`** (measured, OpenRocket 24.12). The default
   `max_workers` is `min(4, cpu_count)`.
+- Workers (and their JVMs) stay warm between `run()` calls — reuse the
+  pool for follow-up batches, and call `pool.shutdown()` when the study is
+  done to release the memory before any long-running analysis.
 - Worker JVMs take a few seconds to boot, so tiny studies are faster
   serial — for a handful of runs, loop `run_simulation` in one process
   instead. On the reference machine (Linux, 12 cores), 8 simple.ork

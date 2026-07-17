@@ -44,3 +44,7 @@ class StudyAborted(OrlabError):
         super().__init__(f"study aborted ({reason}): {message}")
         self.reason = reason
         self.partial = partial
+        self._message = message
+
+    def __reduce__(self):
+        return (StudyAborted, (self.reason, self.partial, self._message))

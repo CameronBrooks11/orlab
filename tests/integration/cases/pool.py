@@ -39,6 +39,12 @@ def value_error_fn(helper, sim, task):
     raise ValueError("python-side failure")
 
 
+def noisy_fn(helper, sim, task):
+    print(f"NOISE-MARKER-{task['tag']}", flush=True)
+    helper.run_simulation(sim, randomize_seed=False)
+    return {"ok": True}
+
+
 def reseeding_fn(helper, sim, task):
     # forgets randomize_seed=False: the recorded seed must be the readback
     helper.run_simulation(sim)
@@ -56,7 +62,15 @@ def main(jar_path):
     perrors = pool.run([{}], worker_fn=value_error_fn)
     reseeded = pool.run([{"seed": 1234}], worker_fn=reseeding_fn)
     warm = pool.run(3, seed=7)
+    # discard (the default) must swallow worker stdout entirely
+    discard_study = pool.run([{"tag": "discard"}], worker_fn=noisy_fn)
     pool.shutdown()
+    # inherit lets worker stdout through to ours
+    loud = orlab.SimulationPool(
+        str(ORK), jar_path, max_workers=1, jvm_args=("-Xmx512m",), worker_stdout="inherit"
+    )
+    inherit_study = loud.run([{"tag": "inherit"}], worker_fn=noisy_fn)
+    loud.shutdown()
 
     print(
         "RESULT "
@@ -81,6 +95,7 @@ def main(jar_path):
                 "reseeded_flag": reseeded.results[0].seed_reassigned,
                 "reseeded_seed_recorded": reseeded.results[0].seed != 1234,
                 "warm_ok": len(warm.results),
+                "stdout_legs_ok": len(discard_study.results) + len(inherit_study.results),
             }
         )
     )

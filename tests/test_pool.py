@@ -240,3 +240,155 @@ def _dispatch_fn(helper, sim, task):
     if task.get("crash"):
         return _pool_stubs.crash_fn(helper, sim, task)
     return _pool_stubs.ok_fn(helper, sim, task)
+
+
+def test_closure_and_local_class_worker_fns_rejected(ork, jar):
+    pool = _pool(ork, jar)
+    captured = 41
+
+    def closure_fn(helper, sim, task):
+        return captured
+
+    class LocalRunner:
+        def __call__(self, helper, sim, task):
+            return None
+
+    for fn in (closure_fn, LocalRunner()):
+        with pytest.raises(ValueError, match="module level"):
+            pool.run(1, worker_fn=fn)
+
+
+def test_unpicklable_task_values_rejected_up_front(ork, jar):
+    """worker_fn tasks carrying unpicklable values would otherwise fail in
+    the executor's feeder thread as a raw PicklingError, discarding every
+    completed result."""
+    pool = _pool(ork, jar)
+    with pytest.raises(ValueError, match="not picklable"):
+        pool.run([{"x": 1}, {"bad": lambda: None}], worker_fn=_pool_stubs.ok_fn)
+
+
+def test_interrupt_during_submit_and_collection(ork, jar, monkeypatch):
+    pool = _pool(ork, jar)
+
+    class InterruptingExecutor:
+        def __init__(self, real):
+            self._real = real
+            self._count = 0
+
+        def submit(self, *args, **kwargs):
+            self._count += 1
+            if self._count == 2:
+                raise KeyboardInterrupt
+            return self._real.submit(*args, **kwargs)
+
+    real_ensure = pool._ensure_executor
+    monkeypatch.setattr(pool, "_ensure_executor", lambda n: InterruptingExecutor(real_ensure(n)))
+    with pytest.raises(StudyAborted) as exc:
+        pool.run(4, worker_fn=_pool_stubs.ok_fn)
+    assert exc.value.reason == "interrupt"
+    with pytest.raises(OrlabError, match="dead"):
+        pool.run(1)
+
+
+def test_interrupt_during_collection(ork, jar, monkeypatch):
+    pool = _pool(ork, jar)
+
+    def interrupting_as_completed(futures):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(parallel, "as_completed", interrupting_as_completed)
+    with pytest.raises(StudyAborted) as exc:
+        pool.run(2, worker_fn=_pool_stubs.ok_fn)
+    assert exc.value.reason == "interrupt"
+
+
+def test_pool_uses_spawn_context(ork, jar):
+    pool = _pool(ork, jar)
+    executor = pool._ensure_executor(1)
+    assert executor._mp_context.get_start_method() == "spawn"
+    pool.shutdown()
+
+
+def test_seed_dedup_avoids_pinned_collision():
+    """Pin a task seed equal to the rng's own first draw: derivation must
+    steer around it (this is the collision the dedup exists for)."""
+    import random
+
+    first_draw = random.Random(123).getrandbits(31)
+    seeds = SimulationPool._derive_seeds([{"seed": first_draw}, {}], seed=123)
+    assert seeds[0] == first_draw
+    assert seeds[1] != first_draw
+
+
+def test_crash_partial_contents(ork, jar):
+    pool = _pool(ork, jar, max_workers=1)
+    with pytest.raises(StudyAborted) as exc:
+        pool.run([{"x": 4}, {"crash": True}], worker_fn=_dispatch_fn)
+    partial = exc.value.partial
+    assert len(partial.results) == 1
+    assert partial.results[0].payload["value"] == 8
+
+
+def test_worker_init_abort_releases_workers(ork, jar):
+    """A worker-init abort must not leak N idle JVM processes."""
+    pool = _pool(ork, jar, _test_init=_pool_stubs.failing_init)
+    with pytest.raises(StudyAborted):
+        pool.run(2, worker_fn=_pool_stubs.ok_fn)
+    assert pool._executor is None and pool._broken
+
+
+def test_initial_progress_exception_cancels(ork, jar):
+    pool = _pool(ork, jar)
+
+    def bad_progress(done, total):
+        raise RuntimeError("dies at zero")
+
+    with pytest.raises(RuntimeError, match="dies at zero"):
+        pool.run(3, worker_fn=_pool_stubs.ok_fn, progress=bad_progress)
+    # pool stays reusable
+    assert pool.run([{"x": 1}], worker_fn=_pool_stubs.ok_fn).results
+
+
+def test_explicit_max_workers_not_clamped_by_first_run(ork, jar):
+    pool = _pool(ork, jar, max_workers=3)
+    executor = pool._ensure_executor(1)  # 1-task warm-up must not shrink it
+    assert executor._max_workers == 3
+    pool.shutdown()
+
+
+def test_default_extract_builtin_floats():
+    payload = parallel._default_extract(
+        _pool_stubs.FakeHelper(_pool_stubs.FakeSim()), _pool_stubs.FakeSim()
+    )
+    assert set(payload) == {
+        "apogee",
+        "max_velocity",
+        "max_acceleration",
+        "flight_time",
+        "landing_x",
+        "landing_y",
+    }
+    assert all(type(v) is float for v in payload.values())
+
+
+@pytest.mark.parametrize("bad", [True, -3])
+def test_int_task_edge_cases_rejected(ork, jar, bad):
+    pool = _pool(ork, jar)
+    with pytest.raises((TypeError, ValueError)):
+        pool.run(bad)
+
+
+def test_single_mapping_tasks_rejected_clearly(ork, jar):
+    pool = _pool(ork, jar)
+    with pytest.raises(TypeError, match="single"):
+        pool.run({"wind_speed_average": 1.0})
+
+
+def test_study_aborted_pickle_round_trip():
+    import pickle
+
+    from orlab.parallel import StudyResult
+
+    err = StudyAborted("interrupt", StudyResult((), ()), "test message")
+    loaded = pickle.loads(pickle.dumps(err))
+    assert loaded.reason == "interrupt" and "test message" in str(loaded)

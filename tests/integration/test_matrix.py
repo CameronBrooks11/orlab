@@ -21,8 +21,12 @@ CASES = Path(__file__).parent / "cases"
 
 
 def run_case(
-    script: str, jar: Path | None, env: dict | None = None, cwd: Path | None = None
-) -> dict:
+    script: str,
+    jar: Path | None,
+    env: dict | None = None,
+    cwd: Path | None = None,
+    return_stdout: bool = False,
+):
     cmd = [sys.executable, str(CASES / script)]
     if jar is not None:
         cmd.append(str(jar))
@@ -37,7 +41,8 @@ def run_case(
     assert proc.returncode == 0, f"{script} failed:\n{proc.stdout}\n{proc.stderr}"
     for line in proc.stdout.splitlines():
         if line.startswith("RESULT "):
-            return json.loads(line[len("RESULT ") :])
+            result = json.loads(line[len("RESULT ") :])
+            return (result, proc.stdout) if return_stdout else result
     raise AssertionError(f"{script} printed no RESULT line:\n{proc.stdout}")
 
 
@@ -278,7 +283,7 @@ def test_pool_end_to_end(jar):
     only."""
     version, path = jar
     _skip_unless_2412(version)
-    result = run_case("pool.py", path)
+    result, stdout = run_case("pool.py", path, return_stdout=True)
 
     assert result["declarative_ok"] == 8
     assert result["seeds_distinct"] == 8
@@ -292,6 +297,9 @@ def test_pool_end_to_end(jar):
     assert result["python_error"] == ["ValueError", "python-side failure"]
     assert result["reseeded_flag"] and result["reseeded_seed_recorded"]
     assert result["warm_ok"] == 3
+    assert result["stdout_legs_ok"] == 2
+    assert "NOISE-MARKER-discard" not in stdout  # discard is clean
+    assert "NOISE-MARKER-inherit" in stdout  # inherit passes through
 
 
 def test_pool_crash_partial_preserved(jar):
