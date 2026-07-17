@@ -1,7 +1,8 @@
 # Monte-carlo studies
 
 The pattern: **one instance, one loaded document, many simulations** —
-randomize parameters between runs and collect results with listeners.
+randomize parameters between runs and collect a
+[flight summary](summaries.md) per run.
 
 ```python
 import math
@@ -20,16 +21,16 @@ with orlab.OpenRocketInstance() as instance:
         opts.setLaunchRodAngle(math.radians(gauss(45, 5)))
         opts.setWindSpeedAverage(gauss(15, 5))
         orl.run_simulation(sim)
-        data = orl.get_timeseries(sim, [orlab.FlightDataType.TYPE_ALTITUDE])
-        apogees.append(float(max(data[orlab.FlightDataType.TYPE_ALTITUDE])))
+        apogees.append(orl.get_summary(sim).apogee)
 ```
 
 The complete version —
 [`examples/simple_ork/monte_carlo.py`](https://github.com/CameronBrooks11/orlab/blob/main/examples/simple_ork/monte_carlo.py)
 — also perturbs component masses (`setMassOverridden` /
 `setOverrideMass`), air-starts the rocket from a randomized altitude with a
-listener, records landing points, and reports the dispersion (note the
-circular mean for bearings — angles don't average like scalars).
+listener, reads landing points from `get_summary`, and reports the
+dispersion (note the circular mean for bearings — angles don't average
+like scalars).
 
 ## Seeds and reproducibility
 

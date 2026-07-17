@@ -3,19 +3,21 @@ name: Canary
 # Monthly: run the newest OpenRocket release against the newest checked-in
 # profile (nearest-older fallback). Catches upstream drift between releases
 # of orlab; failure opens a tracked issue.
+#
+# Two jobs on purpose: the job that executes the untrusted upstream jar runs
+# with a read-only token (and the jar-executing step gets no token at all);
+# only the issue-filing job holds issues:write.
 
 on:
   schedule:
     - cron: "17 5 3 * *"
   workflow_dispatch:
 
-permissions:
-  contents: read
-  issues: write
-
 jobs:
   canary:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
@@ -30,15 +32,20 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Run newest OpenRocket release against current profiles
+      - name: Fetch newest OpenRocket release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG=$(gh api repos/openrocket/openrocket/releases/latest --jq .tag_name)
           VERSION=${TAG#release-}
           echo "Newest OpenRocket release: $VERSION"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           curl -sSfL --retry 3 -o "OpenRocket-$VERSION.jar" \
             "https://github.com/openrocket/openrocket/releases/download/$TAG/OpenRocket-$VERSION.jar"
+
+      - name: Run it against current profiles
+        # no token in this step's env: it executes the downloaded jar
+        run: |
           uv sync
           uv run python tests/integration/cases/happy.py "OpenRocket-$VERSION.jar" | tee canary.out
           grep '^RESULT ' canary.out | sed 's/^RESULT //' > result.json
@@ -55,11 +62,33 @@ jobs:
               )
           print("CANARY OK:", result["version"], "apogee", result["apogee"])
           EOF
+          uv run python tests/integration/cases/summary.py "OpenRocket-$VERSION.jar" | tee summary.out
+          grep '^RESULT ' summary.out | sed 's/^RESULT //' > summary.json
+          python3 - <<'EOF'
+          import math
+          import json
 
+          calm = json.load(open("summary.json"))["calm"]
+          # coarse bands: this runs against unknown future releases
+          assert 10 < calm["apogee"] < 200, calm
+          assert not math.isnan(calm["min_stability_cal"]), calm
+          assert -2 < calm["min_stability_cal"] < 10, calm
+          assert not math.isnan(calm["descent_rate"]), calm
+          assert calm["landing_distance"] < 5, calm
+          print("CANARY summary OK: apogee", calm["apogee"])
+          EOF
+
+  file-issue:
+    runs-on: ubuntu-latest
+    needs: canary
+    if: failure()
+    permissions:
+      issues: write
+    steps:
       - name: Open an issue on failure
-        if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           if [ -z "$(gh issue list --label canary --state open --json number --jq '.[0]')" ]; then
             gh issue create --label canary \

@@ -8,11 +8,7 @@ import orlab
 
 
 class LandingPoints(list):
-    "A list of landing points with ability to run simulations and populate itself"
-
-    def __init__(self):
-        self.ranges = []
-        self.bearings = []
+    "A list of flight summaries with ability to run simulations and populate itself"
 
     def add_simulations(self, num):
         with orlab.OpenRocketInstance() as instance:
@@ -44,39 +40,22 @@ class LandingPoints(list):
                 airstarter = AirStart(
                     gauss(1000, 50)
                 )  # simulation listener to drop from 1000 m +- 50
-                lp = LandingPoint(self.ranges, self.bearings)
-                orl.run_simulation(sim, listeners=(airstarter, lp))
-                self.append(lp)
+                orl.run_simulation(sim, listeners=(airstarter,))
+                self.append(orl.get_summary(sim))
 
     def print_stats(self):
+        ranges = [s.landing_distance for s in self]
+        bearings = [math.radians(s.landing_bearing_deg) for s in self]
         # Bearings are angles: average them as unit vectors, not raw numbers
         # (the arithmetic mean of 1 deg and 359 deg is 180 deg, not 0 deg).
-        mean_bearing = math.atan2(
-            np.mean(np.sin(self.bearings)), np.mean(np.cos(self.bearings))
-        ) % (2 * math.pi)
+        mean_bearing = math.atan2(np.mean(np.sin(bearings)), np.mean(np.cos(bearings))) % (
+            2 * math.pi
+        )
         print(
-            f"Rocket landing zone {np.mean(self.ranges):3.2f} m +- {np.std(self.ranges):3.2f} m "
+            f"Rocket landing zone {np.mean(ranges):3.2f} m +- {np.std(ranges):3.2f} m "
             f"bearing {math.degrees(mean_bearing):3.2f} deg from launch site. "
             f"Based on {len(self)} simulations."
         )
-
-
-class LandingPoint(orlab.AbstractSimulationListener):
-    def __init__(self, ranges, bearings):
-        self.ranges = ranges
-        self.bearings = bearings
-
-    def endSimulation(self, status, simulation_exception):
-        worldpos = status.getRocketWorldPosition()
-        conditions = status.getSimulationConditions()
-        launchpos = conditions.getLaunchSite()
-        geodetic_computation = conditions.getGeodeticComputation()
-
-        if geodetic_computation != geodetic_computation.FLAT:
-            raise Exception("GeodeticComputationStrategy type not supported")
-
-        self.ranges.append(range_flat(launchpos, worldpos))
-        self.bearings.append(bearing_flat(launchpos, worldpos))
 
 
 class AirStart(orlab.AbstractSimulationListener):
@@ -87,22 +66,6 @@ class AirStart(orlab.AbstractSimulationListener):
         position = status.getRocketPosition()
         position = position.add(0.0, 0.0, self.start_altitude)
         status.setRocketPosition(position)
-
-
-METERS_PER_DEGREE_LATITUDE = 111325
-METERS_PER_DEGREE_LONGITUDE_EQUATOR = 111050
-
-
-def range_flat(start, end):
-    dy = (end.getLatitudeDeg() - start.getLatitudeDeg()) * METERS_PER_DEGREE_LATITUDE
-    dx = (end.getLongitudeDeg() - start.getLongitudeDeg()) * METERS_PER_DEGREE_LONGITUDE_EQUATOR
-    return math.sqrt(dy * dy + dx * dx)
-
-
-def bearing_flat(start, end):
-    dy = (end.getLatitudeDeg() - start.getLatitudeDeg()) * METERS_PER_DEGREE_LATITUDE
-    dx = (end.getLongitudeDeg() - start.getLongitudeDeg()) * METERS_PER_DEGREE_LONGITUDE_EQUATOR
-    return math.atan2(dx, dy) % (2 * math.pi)  # bearing from north, clockwise
 
 
 if __name__ == "__main__":

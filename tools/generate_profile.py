@@ -101,6 +101,49 @@ def verify_manifest(instance, startup):
     ):
         require_class(core, f"simulation.listeners.{listener}")
     require_class(core, "plugin.PluginModule")
+
+    # get_summary surface: the FlightData scalar getters (getOptimumDelay is
+    # 23.09+), the warning set, and the branch accessors (getBranchName
+    # through 23.09, getName from 24.12)
+    summary_getters = [
+        "getBranchCount",
+        "getBranch",
+        "getWarningSet",
+        "getMaxAltitude",
+        "getMaxVelocity",
+        "getMaxAcceleration",
+        "getMaxMachNumber",
+        "getTimeToApogee",
+        "getFlightTime",
+        "getGroundHitVelocity",
+        "getLaunchRodVelocity",
+        "getDeploymentVelocity",
+    ]
+    if parse_version(instance.or_version) >= (23, 9):
+        summary_getters.append("getOptimumDelay")
+    for getter in summary_getters:
+        require_class(
+            core,
+            "simulation.FlightData",
+            lambda c, g=getter: _has_method(c, g),
+            f"FlightData.{getter}",
+        )
+    # event types the summary windows anchor on
+    _, live_events = reflect_live_constants(core)
+    for event in ("LAUNCHROD", "APOGEE", "RECOVERY_DEVICE_DEPLOYMENT", "GROUND_HIT"):
+        if event not in live_events:
+            missing.append(f"FlightEvent.Type.{event}")
+
+    branch_name_accessor = (
+        "getName" if parse_version(instance.or_version) >= (24, 12) else "getBranchName"
+    )
+    for member in ("get", "getEvents", branch_name_accessor):
+        require_class(
+            core,
+            "simulation.FlightDataBranch",
+            lambda c, m=member: _has_method(c, m),
+            f"FlightDataBranch.{member}",
+        )
     if startup == "core":
         require_class(
             core,

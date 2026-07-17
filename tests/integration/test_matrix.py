@@ -125,6 +125,103 @@ def test_discovery_boot_from_fake_install(jar, tmp_path):
     assert result["apogee"] > 10
 
 
+def test_summary_simple(jar):
+    """get_summary on simple.ork: tight expectations under fixed seed + zero
+    wind (bands recalibrated by probe under this exact configuration), coarse
+    ones with wind on, and the pickle loaded HERE — in a process that has
+    never started a JVM — proving the cross-process payload contract."""
+    import base64
+    import math
+    import pickle
+
+    version, path = jar
+    result = run_case("summary.py", path)
+    calm, windy = result["calm"], result["windy"]
+
+    assert 40 < calm["apogee"] < 60
+    assert 3.0 < calm["time_to_apogee"] < 4.0
+    assert 14 < calm["velocity_off_rod"] < 17
+    assert 2.0 < calm["stability_off_rod_cal"] < 4.0
+    # the assertion that fails if 24.12 windowing regresses (blind min: -9.6)
+    assert 0.5 < calm["min_stability_cal"] < 4.0
+    assert 2.5 < calm["max_stability_cal"] < 7.0  # windowed peak is version-dependent (3.1-5.4)
+    assert 0.05 < calm["max_mach"] < 0.12
+    assert 3.0 < calm["descent_rate"] < 5.0
+    assert 3.0 < calm["ground_hit_velocity"] < 5.0
+    assert 14 < calm["flight_time"] < 18
+    assert calm["landing_distance"] < 1.0
+    assert math.isclose(
+        calm["landing_distance"], math.hypot(calm["landing_x"], calm["landing_y"]), abs_tol=1e-6
+    )
+    assert math.isnan(calm["optimum_delay"]) == (version < "23.09")
+    assert calm["branch_count"] == 1 and calm["branch_number"] == 0
+
+    # wind on, turbulence zero: coarse properties only
+    assert 10 < windy["landing_distance"] < 200
+    assert 240 < windy["landing_bearing_deg"] < 300  # default wind blows it west
+    assert math.isclose(
+        windy["landing_distance"], math.hypot(windy["landing_x"], windy["landing_y"]), abs_tol=1e-6
+    )
+
+    # cross-process pickle: this test process has no JVM
+    import jpype
+
+    assert not jpype.isJVMStarted()
+    loaded = pickle.loads(base64.b64decode(result["pickle_b64"]))
+    assert loaded.to_dict().keys() == calm.keys()
+    for key, value in calm.items():
+        got = getattr(loaded, key)
+        if isinstance(value, float) and math.isnan(value):
+            assert math.isnan(got)
+        elif key == "warnings":
+            assert got == tuple(value)
+        else:
+            assert got == value
+
+    assert result["calm_str"].startswith("Flight summary")
+
+
+def test_summary_multistage(jar):
+    """Every branch of the jar's own bundled three-stage example: boosters
+    have no rod departure or deployment (NaN), the sustainer has both; a
+    pinned jar missing its pinned example member fails, never skips."""
+    import math
+
+    version, path = jar
+    result = run_case("summary_multistage.py", path)
+    branches = result["branches"]
+
+    assert len(branches) == 3
+    sustainer, boosters = branches[0], branches[1:]
+    assert sustainer["branch_name"] == "Sustainer"
+    assert 200 < sustainer["apogee"] < 350
+    assert 8 < sustainer["velocity_off_rod"] < 15
+    assert not math.isnan(sustainer["descent_rate"])
+    for booster in boosters:
+        assert "ooster" in booster["branch_name"]
+        assert 5 < booster["apogee"] < 150
+        assert math.isnan(booster["velocity_off_rod"])
+        assert math.isnan(booster["stability_off_rod_cal"])
+        assert math.isnan(booster["descent_rate"])
+        assert math.isnan(booster["optimum_delay"])
+    # warnings are opaque strings wherever they appear; the older examples
+    # actually produce some (the 24.12 example is warning-free)
+    assert set(result["warning_types"]) <= {"str"}
+    if version < "24.12":
+        assert result["warning_types"]
+
+    # 24.12 two-stage: the booster HAS a recovery device — the derived
+    # (branch > 0) path must report finite deployment/descent fields
+    if version == "24.12":
+        sustainer2, booster2 = result["two_stage"]
+        assert 500 < sustainer2["apogee"] < 900
+        assert booster2["branch_name"] == "Booster"
+        assert 100 < booster2["apogee"] < 250
+        assert 5 < booster2["descent_rate"] < 12
+        assert 1 < booster2["velocity_at_deployment"] < 10
+        assert math.isnan(booster2["velocity_off_rod"])
+
+
 def test_cross_version_apogee_tolerance(all_jars):
     """Same rocket, zero wind: apogee must agree across every version within a
     band. Profiles catch name drift; only result comparison catches semantic

@@ -5,6 +5,7 @@ def test_public_surface_stable():
         "AbstractSimulationListener",
         "FlightDataType",
         "FlightEvent",
+        "FlightSummary",
         "Helper",
         "JIterator",
         "OpenRocketInstance",

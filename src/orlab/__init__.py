@@ -3,12 +3,14 @@ from .core.helper import Helper
 from .core.jiterator import JIterator
 from .core.openrocket_instance import OpenRocketInstance
 from .core.simulation_listener import AbstractSimulationListener
+from .core.summary import FlightSummary
 from .jars import fetch_jar
 
 __all__ = [
     "AbstractSimulationListener",
     "FlightDataType",
     "FlightEvent",
+    "FlightSummary",
     "Helper",
     "JIterator",
     "OpenRocketInstance",
