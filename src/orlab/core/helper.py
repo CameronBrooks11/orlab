@@ -225,6 +225,7 @@ class Helper:
 
         :param branch_number: Stage branch to summarize (0 = sustainer).
         """
+        branch_number = int(branch_number)  # builtin-types contract incl. numpy ints
         flight_data = simulation.getSimulatedData()
         if flight_data is None or int(flight_data.getBranchCount()) == 0:
             raise OrlabError("Simulation has no flight data; call run_simulation first")
@@ -314,7 +315,9 @@ class Helper:
             velocity_at_deployment = at_event("RECOVERY_DEVICE_DEPLOYMENT", velocity_total, -1)
             ground_hit_velocity = at_event("GROUND_HIT", velocity_total)
             flight_time = float(times[-1]) if len(times) else math.nan
-            optimum_delay = math.nan  # OpenRocket computes it per-flight, not per-branch
+            # policy: reported for the sustainer only, where FlightData's own
+            # figure is authoritative
+            optimum_delay = math.nan
 
         pos_x = self._branch_series(branch, "TYPE_POSITION_X")
         pos_y = self._branch_series(branch, "TYPE_POSITION_Y")
@@ -329,11 +332,17 @@ class Helper:
         else:
             branch_name = ""
 
+        # bounded at apogee: the NaN-skip must not report a post-apogee
+        # (tumble-regime) sample as the off-rod margin
+        off_rod_stability = math.nan
+        if t_rod is not None:
+            off_rod_stability = _value_at(
+                times, stability, t_rod, t_max=t_apogee if t_apogee is not None else math.inf
+            )
+
         return FlightSummary(
             velocity_off_rod=velocity_off_rod,
-            stability_off_rod_cal=(
-                _value_at(times, stability, t_rod) if t_rod is not None else math.nan
-            ),
+            stability_off_rod_cal=off_rod_stability,
             apogee=apogee,
             time_to_apogee=time_to_apogee,
             max_velocity=max_velocity,

@@ -128,6 +128,12 @@ def verify_manifest(instance, startup):
             lambda c, g=getter: _has_method(c, g),
             f"FlightData.{getter}",
         )
+    # event types the summary windows anchor on
+    _, live_events = reflect_live_constants(core)
+    for event in ("LAUNCHROD", "APOGEE", "RECOVERY_DEVICE_DEPLOYMENT", "GROUND_HIT"):
+        if event not in live_events:
+            missing.append(f"FlightEvent.Type.{event}")
+
     branch_name_accessor = (
         "getName" if parse_version(instance.or_version) >= (24, 12) else "getBranchName"
     )

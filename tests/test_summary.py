@@ -192,12 +192,12 @@ def test_branch0_uses_flightdata_getters_verbatim():
     assert s.branch_name == "Sustainer"
 
 
-def test_absent_getter_nans_with_one_warning(caplog):
+def test_absent_getter_nans_with_one_warning(caplog, monkeypatch):
     getters = {k: v for k, v in GETTERS_2412.items() if k != "getOptimumDelay"}
     fd = _FlightData([_Branch(SERIES, EVENTS)], **getters)
     import logging
 
-    helper_mod._absence_warned.discard("FlightData.getOptimumDelay")
+    monkeypatch.setattr(helper_mod, "_absence_warned", set())  # restored after
     with caplog.at_level(logging.WARNING):
         s = _summary(fd, version="22.02")
         _summary(fd, version="22.02")  # second call: no second warning
@@ -286,9 +286,13 @@ def test_str_renders_every_field():
         if f.name == "warnings":
             assert "Warnings" in text
         elif f.name in ("branch_number", "branch_name", "branch_count"):
-            continue  # rendered in the header line
+            # the header line: "branch 0 of 1 (Sustainer)"
+            assert f"branch {s.branch_number} of {s.branch_count} ({s.branch_name})" in text
         else:
-            assert f.name.replace("_", " ") in text, f"{f.name} missing from __str__"
+            # a rendered value line, not a substring anywhere ("apogee" also
+            # occurs inside "time to apogee" — the label match must be exact)
+            label = f"\n    {f.name.replace('_', ' ')}:"
+            assert label in text, f"{f.name} missing from __str__"
     assert "n/a" not in text  # this summary has no NaN fields
 
 

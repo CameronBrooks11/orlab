@@ -55,8 +55,9 @@ class FlightSummary:
     """Total velocity at the last recovery device deployment (m/s); NaN
     without a deployment."""
     descent_rate: float
-    """Mean vertical descent speed (m/s, positive down) from the last
-    recovery device deployment to ground hit; NaN without a deployment."""
+    """Sample mean of vertical descent speed (m/s, positive down) over the
+    samples from the last recovery device deployment to ground hit; NaN
+    without a deployment."""
     ground_hit_velocity: float
     """Speed at ground contact (m/s)."""
     landing_x: float
@@ -142,7 +143,10 @@ class FlightSummary:
         return {f.name: getattr(self, f.name) for f in fields(self)}
 
     def __str__(self) -> str:
-        lines = [f"Flight summary — branch {self.branch_number} ({self.branch_name})"]
+        lines = [
+            f"Flight summary — branch {self.branch_number} of "
+            f"{self.branch_count} ({self.branch_name})"
+        ]
         for section, names in self._SECTIONS:
             lines.append(f"  {section}:")
             for name in names:
@@ -166,15 +170,18 @@ def _bearing_deg(east: float, north: float) -> float:
     return math.degrees(math.atan2(east, north)) % 360.0
 
 
-def _value_at(times: np.ndarray, values: np.ndarray, t: float) -> float:
-    """The first finite sample at or after time t; NaN when the series is
-    empty or holds no finite sample from t on. Skipping NaN samples is
-    deliberate: e.g. 22.02/23.09 record stability as NaN at the exact
-    launch-rod-departure step and compute it from the next step."""
+def _value_at(times: np.ndarray, values: np.ndarray, t: float, t_max: float = math.inf) -> float:
+    """The first finite sample in t <= time <= t_max; NaN when the series is
+    empty or holds no finite sample in that range. Skipping NaN samples is
+    deliberate — 22.02/23.09 record stability as NaN at the exact
+    launch-rod-departure step and compute it from the next step — and t_max
+    keeps the skip from silently walking into a later flight regime."""
     if len(times) == 0 or len(values) == 0:
         return math.nan
     start = np.searchsorted(times, t, side="left")
     for idx in range(start, len(values)):
+        if times[idx] > t_max:
+            break
         if not math.isnan(values[idx]):
             return float(values[idx])
     return math.nan

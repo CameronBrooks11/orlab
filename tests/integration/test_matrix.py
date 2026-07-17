@@ -210,6 +210,17 @@ def test_summary_multistage(jar):
     if version < "24.12":
         assert result["warning_types"]
 
+    # 24.12 two-stage: the booster HAS a recovery device — the derived
+    # (branch > 0) path must report finite deployment/descent fields
+    if version == "24.12":
+        sustainer2, booster2 = result["two_stage"]
+        assert 500 < sustainer2["apogee"] < 900
+        assert booster2["branch_name"] == "Booster"
+        assert 100 < booster2["apogee"] < 250
+        assert 5 < booster2["descent_rate"] < 12
+        assert 1 < booster2["velocity_at_deployment"] < 10
+        assert math.isnan(booster2["velocity_off_rod"])
+
 
 def test_cross_version_apogee_tolerance(all_jars):
     """Same rocket, zero wind: apogee must agree across every version within a
