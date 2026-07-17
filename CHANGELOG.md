@@ -1,0 +1,48 @@
+# Changelog
+
+All notable changes to orlab are documented here. Follows
+[Keep a Changelog](https://keepachangelog.com) and
+[Semantic Versioning](https://semver.org). History before 0.3.0 was
+reconstructed from the git log.
+
+## [Unreleased]
+
+### Changed
+
+- Packaging migrated to `pyproject.toml` (hatchling) with a `src/` layout and
+  uv-managed environments; `setup.py` removed. Public import surface unchanged.
+- `requires-python` raised to `>=3.10`; license metadata now correctly
+  declares GPL-2.0-only (matching the LICENSE file).
+- Quality gate: `justfile` (fmt / lint / typecheck / check / test through uv),
+  ruff + mypy clean, pre-commit with gitleaks, `AGENTS.md`, and a jar-free
+  unit-test suite (version detection, package-root selection, iterator
+  bridging, API-surface freeze).
+- CI: checks and a Python 3.10/3.14 unit-test matrix on every push and PR;
+  releases publish to PyPI via Trusted Publishing on the `pypi` environment.
+
+### Fixed
+
+- `Helper.get_events()` return annotation matches its actual behavior
+  (`Dict[FlightEvent, List[float]]` — a list of times per event).
+
+### Removed
+
+- Dead `orlab._orhelper` shim module and `scripts/debug_jvm.py`.
+
+## [0.3.0] — 2026-07-17
+
+### Added
+
+- OpenRocket **24.12** support (#2): the jar's version is read from its
+  `build.properties` before the JVM starts and the Java package roots
+  (`net.sf.openrocket` vs `info.openrocket.core`/`info.openrocket.swing`)
+  are selected automatically. `instance.or_version` and
+  `instance.openrocket_swing` exposed; public API otherwise unchanged.
+- OpenRocket 15.03 works on modern JVMs (`--add-opens` at JVM start).
+  Verified by real simulations against 15.03, 22.02, 23.09, and 24.12.
+
+## [0.2.x] — 2025
+
+Initial orlab releases (0.2.3–0.2.7): evolution of
+[orhelper](https://github.com/SilentSys/orhelper) — driver reorganization into
+`core/`/`utils/`, PyPI publication, docs and examples for OpenRocket 23.09.
