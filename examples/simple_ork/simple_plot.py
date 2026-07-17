@@ -11,7 +11,7 @@ with orlab.OpenRocketInstance() as instance:
 
     # Load document, run simulation and get data and events
 
-    doc = orl.load_doc(os.path.join("examples/simple_ork", "simple.ork"))
+    doc = orl.load_doc(os.path.join(os.path.dirname(__file__), "simple.ork"))
     sim = doc.getSimulation(0)
     orl.run_simulation(sim)
     data = orl.get_timeseries(

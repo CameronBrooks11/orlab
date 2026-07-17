@@ -7,6 +7,20 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Changed
+
+- README rewritten: version-support matrix (all four OpenRocket versions
+  CI-tested), working quickstart, lifecycle/seed/JVM-options notes, trimmed
+  JDK setup, uv/just development workflow.
+- Examples resolve `simple.ork` relative to the script (they previously only
+  worked from the repository root), and their third-party dependencies are
+  declared as the `examples` dependency group.
+
+### Fixed
+
+- `examples/simple_ork/lazy.py` works with modern numpy (`fmin` passes a
+  1-element array that `math.radians` no longer coerces).
+
 ## [0.5.0] — 2026-07-17
 
 ### Added

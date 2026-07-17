@@ -1,172 +1,138 @@
 # orlab
 
-**orlab** is a Python module designed to simplify interaction and scripting with [OpenRocket](https://openrocket.info/) from Python. It leverages JPype to bridge Python and Java, enabling seamless control over OpenRocket's functionalities. Currently, it supports access to simulation capabilities given an `.ork` file, with the goal of future expansion to enable more sophisticated computational engineering workflows.
+**orlab** scripts [OpenRocket](https://openrocket.info/) from Python via
+[JPype](https://jpype.readthedocs.io/): load `.ork` files, run simulations
+(optionally with custom listeners), and extract time series, final values,
+and flight events as Python/numpy data.
 
-This project is an evolution of the original [orhelper](https://github.com/SilentSys/orhelper) library, which hasn't been maintained recently and is limited in scope. **orlab** supports current OpenRocket versions (the package root is detected from the jar automatically), reorganizes the code for better structure, and plans to incorporate additional features.
+```python
+import orlab
 
-## Table of Contents
+with orlab.OpenRocketInstance(jar_path="OpenRocket-24.12.jar") as instance:
+    orl = orlab.Helper(instance)
+    doc = orl.load_doc("rocket.ork")
+    sim = doc.getSimulation(0)
+    orl.run_simulation(sim)
 
-- [orlab](#orlab)
-  - [Table of Contents](#table-of-contents)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Setting Up the JDK](#setting-up-the-jdk)
-    - [Linux](#linux)
-    - [Windows](#windows)
-  - [Usage](#usage)
-  - [Development](#development)
-  - [Credits](#credits)
+    data = orl.get_timeseries(
+        sim, [orlab.FlightDataType.TYPE_TIME, orlab.FlightDataType.TYPE_ALTITUDE]
+    )
+    events = orl.get_events(sim)  # {FlightEvent.APOGEE: [3.51], ...}
+```
 
-## Prerequisites
+The project is an evolution of [orhelper](https://github.com/SilentSys/orhelper).
+Where orhelper targets a single OpenRocket version, orlab detects the jar's
+version before the JVM starts and adapts to it — package roots, startup path,
+and available flight-data constants all come from checked-in, generated
+version profiles.
 
-Before installing **orlab**, ensure you have the following installed on your system:
+## Supported OpenRocket versions
 
-- An **OpenRocket** jar — the version is detected automatically:
-  - [OpenRocket-24.12.jar](https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar) or [OpenRocket-23.09.jar](https://github.com/openrocket/openrocket/releases/download/release-23.09/OpenRocket-23.09.jar) (both tested; 22.02 and 15.03 also verified working)
-- **Adoptium JDK 17 LTS** (or higher?)
-  - [Download Adoptium JDK](https://adoptium.net/)
-  - Other JDK releases (i.e. 22) have been tested and work, but not thoroughly.
-- **Python** version **3.10** or higher
+| OpenRocket | Status | Notes |
+| ---------- | ------ | ----- |
+| 24.12 | CI-tested (JDK 17, 21) | headless startup, no display needed |
+| 23.09 | CI-tested (JDK 17, 21) | |
+| 22.02 | CI-tested (JDK 17, 21) | |
+| 15.03 | CI-tested (JDK 17, 21) | |
+| newer releases | forward fallback | run day-one on the nearest older profile, with a warning; full support is one profile-regeneration PR |
+
+Every version in the table runs real simulations in CI on every push, and a
+monthly canary checks the newest upstream release against the newest profile.
+
+Version differences are enforced with clear errors: requesting a constant the
+loaded version does not have raises `UnsupportedFlightDataType` naming the
+versions that have it. Constants newer than the enum can be passed as strings,
+e.g. `orl.get_timeseries(sim, ["TYPE_SOME_NEW_TYPE"])`.
 
 ## Installation
 
-1. **Install the Package**
-
-   Install **orlab** using `pip`:
+1. **Install the package**
 
    ```
    pip install orlab
    ```
 
-2. **Install Java JDK**
+2. **Install a JDK** (17 or 21, [Adoptium Temurin](https://adoptium.net/)
+   tested). Let the installer set `JAVA_HOME` — JPype finds the JVM through
+   it. See [Setting up the JDK](#setting-up-the-jdk) if it doesn't.
 
-   See [Setting Up the JDK](#setting-up-the-jdk) for more details.
+3. **Download an OpenRocket jar**
 
-3. **Download OpenRocket JAR**
+   ```
+   wget https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar
+   ```
 
-   If you haven't already, download the OpenRocket `.jar` file:
-
-   - **Direct Download:** [OpenRocket-24.12.jar](https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar)
-
-   - **Using `wget` on Linux:**
-
-     ```
-     wget https://github.com/openrocket/openrocket/releases/download/release-24.12/OpenRocket-24.12.jar
-     ```
-
-4. **Point orlab at the jar**
-
-   Pass `jar_path` to `OpenRocketInstance(...)`, or set the `ORLAB_JAR` environment variable. This step is only necessary if the `.jar` file is not located in the current directory.
+4. **Point orlab at the jar** — pass `jar_path=` to `OpenRocketInstance(...)`,
+   or set an environment variable (only needed when the jar is not in the
+   current directory):
 
    ```
    export ORLAB_JAR=/path/to/OpenRocket-24.12.jar
    ```
 
-   _Replace `/path/to/` with the actual directory path where the `.jar` file is located. The legacy `CLASSPATH` variable also still works._
-
-## Setting Up the JDK
-
-### Linux
-
-1. **Install Adoptium JDK 17 LTS**
-
-   Download and install the Adoptium JDK from the [official website](https://adoptium.net/). Check the option to set / override `JAVA_HOME`, unless you have a specific reason not to in which case pass `jvm_path=` to `OpenRocketInstance`.
-
-2. **Set the `JAVA_HOME` Environment Variable**
-
-   If JPype doesn't automatically detect the JDK, manually set the `JAVA_HOME` environment variable:
-
-   - **Find Installation Directory:**
-
-     Locate where Adoptium JDK is installed, e.g., `/usr/lib/jvm/adoptium-17`.
-
-   - **Edit `~/.bashrc`:**
-
-     Open the `.bashrc` file with your preferred text editor:
-
-     ```
-     nano ~/.bashrc
-     ```
-
-   - **Add the Following Line:**
-
-     ```
-     export JAVA_HOME="/usr/lib/jvm/adoptium-17"
-     ```
-
-   - **Apply Changes:**
-
-     ```
-     source ~/.bashrc
-     ```
-
-### Windows
-
-1. **Install Adoptium JDK 17 LTS**
-
-   Download and install the Adoptium JDK from the [official website](https://adoptium.net/).
-
-2. **Set Environment Variables**
-
-   - **Open Environment Variables Settings:**
-
-     Navigate to `Control Panel` > `System` > `Advanced system settings` > `Environment Variables`.
-
-   - **Add `JAVA_HOME`:**
-
-     - Click on `New` under **System variables**.
-     - Set **Variable name** to `JAVA_HOME`.
-     - Set **Variable value** to the path where Adoptium JDK is installed, e.g., `C:\Program Files\Eclipse Adoptium\jdk-17`.
-
-   - **Update `PATH`:**
-
-     - Select the `Path` variable and click `Edit`.
-     - Click `New` and add `%JAVA_HOME%\bin`.
-
-   - **Apply and Close:**
-
-     Click `OK` to apply the changes.
+   The legacy `CLASSPATH` variable also still works.
 
 ## Usage
 
-After installation and setup, you can start using **orlab** to interact with OpenRocket. Refer to the `examples/` directory for sample scripts demonstrating various functionalities. The package must be installed (`pip install orlab`, or `pip install -e .` from a clone) before running them — the source now lives under `src/` and is not importable from the repository root.
+The [`examples/`](examples/simple_ork) directory demonstrates the main
+workflows against a bundled `.ork` file:
 
-For more detailed information and advanced usage, consult the [OpenRocket Wiki on Scripting with Python and JPype](https://github.com/openrocket/openrocket/wiki/Scripting-with-Python-and-JPype).
+- [`simple_plot.py`](examples/simple_ork/simple_plot.py) — run one simulation, plot altitude and vertical velocity
+- [`advanced_plot.py`](examples/simple_ork/advanced_plot.py) — multiple series, events annotated on the plot
+- [`monte_carlo.py`](examples/simple_ork/monte_carlo.py) — dispersion study with randomized parameters and custom listeners (landing-point capture, air start)
+- [`lazy.py`](examples/simple_ork/lazy.py) — optimize a design parameter against simulation output
 
-_API docs are a work-in-progress, for now see the `examples` folder for usage._
+The plotting examples need `matplotlib` (and `lazy.py` needs `scipy`) —
+`pip install matplotlib scipy`, or `uv sync --group examples` in a clone.
+
+Worth knowing:
+
+- **One OpenRocket jar per process** (JPype cannot restart a JVM). The JVM
+  starts on first use and stays up until the interpreter exits; sequential
+  `with` blocks and notebook re-runs on the same jar reuse it, a different
+  jar raises `OrlabError`. Use subprocesses to compare versions.
+- `run_simulation` randomizes the simulation seed by default (what
+  monte-carlo loops want); pass `randomize_seed=False` to keep a seed you
+  set yourself.
+- JVM options: `OpenRocketInstance(jvm_args=("-Xmx4g",))` for large runs;
+  `jvm_path=` selects a specific JVM.
+- Exceptions raised inside your `AbstractSimulationListener` subclass
+  propagate out of `run_simulation` intact.
+
+For background, see the
+[OpenRocket wiki on scripting with Python and JPype](https://github.com/openrocket/openrocket/wiki/Scripting-with-Python-and-JPype).
+
+## Setting up the JDK
+
+JPype locates the JVM via `JAVA_HOME`. If startup fails with a JVM-not-found
+error:
+
+- **Linux**: `export JAVA_HOME=/usr/lib/jvm/<your-jdk>` (add to `~/.bashrc`),
+  or install via your package manager (`temurin-21-jdk`, `openjdk-21-jdk`).
+- **Windows**: set `JAVA_HOME` under *System Properties → Environment
+  Variables* to e.g. `C:\Program Files\Eclipse Adoptium\jdk-21`, and add
+  `%JAVA_HOME%\bin` to `Path`.
+- Any platform: pass the JVM library path directly —
+  `OpenRocketInstance(jvm_path="/path/to/libjvm.so")`.
 
 ## Development
 
-If you wish to contribute or modify **orlab**, follow these steps:
+The toolchain is [uv](https://docs.astral.sh/uv/) +
+[just](https://github.com/casey/just); working agreements live in
+[AGENTS.md](AGENTS.md).
 
-1. **Clone the Repository**
+```
+git clone https://github.com/CameronBrooks11/orlab.git
+cd orlab
+just setup     # uv sync
+just check     # format check + lint + mypy
+just test      # unit tests (no jar or JVM needed)
+```
 
-   ```
-   git clone https://github.com/yourusername/orlab.git
-   cd orlab
-   ```
-
-2. **Install Dependencies in Editable Mode**
-
-   ```
-   pip install -e .
-   ```
-
-3. **Make Your Changes**
-
-   Modify the codebase as needed. Ensure that your changes are well-documented and tested.
-
-4. **Run Tests**
-
-   _(Assuming tests are set up)_
-
-   ```
-   pytest
-   ```
-
-5. **Submit a Pull Request**
-
-   Push your changes to a forked repository and submit a pull request for review.
+`just test-integration` runs real simulations against every supported
+OpenRocket version (jars are downloaded and cached on first run). Releases
+are tagged from `main` and published to PyPI by CI — see
+[CHANGELOG.md](CHANGELOG.md).
 
 ## Credits
 
@@ -174,7 +140,3 @@ If you wish to contribute or modify **orlab**, follow these steps:
   - **Richard Graham** for the original script: [Source](https://sourceforge.net/p/openrocket/mailman/openrocket-devel/thread/4F17AA0C.1040002@rdg.cc/)
   - **@not7cd** for initial organization and cleanup: [Source](https://github.com/not7cd/orhelper)
 - All contributors to the [OpenRocket](https://openrocket.info/) project over the years
-
----
-
-_Feel free to contribute, report issues, or suggest enhancements!_

@@ -18,7 +18,7 @@ class LandingPoints(list):
         with orlab.OpenRocketInstance() as instance:
             # Load the document and get simulation
             orl = orlab.Helper(instance)
-            doc = orl.load_doc(os.path.join("examples/simple_ork", "simple.ork"))
+            doc = orl.load_doc(os.path.join(os.path.dirname(__file__), "simple.ork"))
             sim = doc.getSimulation(0)
 
             # Randomize various parameters
