@@ -4,8 +4,30 @@ import logging
 from typing import Union
 from .._enums import OrLogLevel
 from ..utils.utils import _get_private_field
+from .version import read_or_version, select_roots
 
 __all__ = ['OpenRocketInstance']
+
+# The core package root of the running OpenRocket, set when an instance starts.
+# Module state is safe here: JPype allows exactly one JVM (and therefore one
+# OpenRocket version) per process.
+_active_core_root = None
+
+
+def active_core_root():
+    """ Returns the JPackage core root of the started OpenRocket instance. """
+    if _active_core_root is None:
+        raise RuntimeError("No OpenRocketInstance has been started in this process")
+    return _active_core_root
+
+
+def _jpackage(dotted: str):
+    """ Resolves a dotted package name to a jpype JPackage object. """
+    parts = dotted.split(".")
+    pkg = jpype.JPackage(parts[0])
+    for part in parts[1:]:
+        pkg = getattr(pkg, part)
+    return pkg
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,6 +56,7 @@ class OpenRocketInstance:
         if not os.path.exists(jar_path):
             raise FileNotFoundError(f"Jar file {os.path.abspath(jar_path)} does not exist")
         self.jar_path = jar_path
+        self.or_version = read_or_version(jar_path)
 
         if isinstance(log_level, str):
             self.or_log_level = OrLogLevel[log_level]
@@ -41,22 +64,35 @@ class OpenRocketInstance:
             self.or_log_level = log_level
 
     def __enter__(self):
+        global _active_core_root
+
         # Use MANUAL_JVM_PATH if set, otherwise get default JVM path
         jvm_path = self.MANUAL_JVM_PATH or jpype.getDefaultJVMPath()
 
-        logger.info(f"Starting JVM from {jvm_path} CLASSPATH={self.jar_path}")
+        logger.info(f"Starting JVM from {jvm_path} CLASSPATH={self.jar_path} "
+                    f"(OpenRocket {self.or_version})")
 
-        jpype.startJVM(jvm_path, "-ea", f"-Djava.class.path={self.jar_path}")
+        # --add-opens: OpenRocket <= 15.03 bundles a Guice that reflects into
+        # java.lang, which the module system blocks on modern JVMs. Harmless
+        # on newer OpenRocket versions.
+        jpype.startJVM(jvm_path, "-ea",
+                       "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                       f"-Djava.class.path={self.jar_path}")
 
         # ----- Java imports -----
-        self.openrocket = jpype.JPackage("net").sf.openrocket
+        # OpenRocket 24.12 renamed net.sf.openrocket to info.openrocket.core +
+        # info.openrocket.swing; select the roots matching the loaded jar.
+        roots = select_roots(self.or_version)
+        self.openrocket = _jpackage(roots.core)
+        self.openrocket_swing = _jpackage(roots.swing)
+        _active_core_root = self.openrocket
         guice = jpype.JPackage("com").google.inject.Guice
         LoggerFactory = jpype.JPackage("org").slf4j.LoggerFactory
         Logger = jpype.JPackage("ch").qos.logback.classic.Logger
         # -----
 
         # Effectively a minimally viable translation of openrocket.startup.SwingStartup
-        gui_module = self.openrocket.startup.GuiModule()
+        gui_module = self.openrocket_swing.startup.GuiModule()
         plugin_module = self.openrocket.plugin.PluginModule()
 
         injector = guice.createInjector(gui_module, plugin_module)

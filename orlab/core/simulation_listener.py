@@ -1,5 +1,6 @@
 from copy import copy
 import jpype
+from .openrocket_instance import active_core_root
 
 __all__ = ['AbstractSimulationListener']
 
@@ -99,9 +100,10 @@ class AbstractSimulationListener:
         return None
 
     def clone(self):
+        openrocket = active_core_root()
         return jpype.JProxy((
-            jpype.JPackage("net").sf.openrocket.simulation.listeners.SimulationListener,
-            jpype.JPackage("net").sf.openrocket.simulation.listeners.SimulationEventListener,
-            jpype.JPackage("net").sf.openrocket.simulation.listeners.SimulationComputationListener,
+            openrocket.simulation.listeners.SimulationListener,
+            openrocket.simulation.listeners.SimulationEventListener,
+            openrocket.simulation.listeners.SimulationComputationListener,
             jpype.java.lang.Cloneable,),
             inst=copy(self))
