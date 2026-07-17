@@ -14,6 +14,7 @@ into-wind direction — ``launch_rod_direction`` only takes effect together
 with ``launch_into_wind: False`` (verified on all four versions).
 """
 
+from types import MappingProxyType
 from typing import NamedTuple
 
 __all__ = ["DECLARATIVE_KEYS", "DeclarativeKey"]
@@ -29,19 +30,22 @@ class DeclarativeKey(NamedTuple):
 
 
 # launch_into_wind precedes launch_rod_direction on purpose: appliers that
-# set keys in this order get the verified round-trip semantics
-DECLARATIVE_KEYS: dict[str, DeclarativeKey] = {
-    "launch_rod_length": DeclarativeKey("setLaunchRodLength", "getLaunchRodLength", float, "m"),
-    "launch_rod_angle": DeclarativeKey("setLaunchRodAngle", "getLaunchRodAngle", float, "rad"),
-    "launch_into_wind": DeclarativeKey("setLaunchIntoWind", "getLaunchIntoWind", bool, ""),
-    "launch_rod_direction": DeclarativeKey(
-        "setLaunchRodDirection", "getLaunchRodDirection", float, "rad"
-    ),
-    "launch_altitude": DeclarativeKey("setLaunchAltitude", "getLaunchAltitude", float, "m"),
-    "launch_latitude": DeclarativeKey("setLaunchLatitude", "getLaunchLatitude", float, "°"),
-    "launch_longitude": DeclarativeKey("setLaunchLongitude", "getLaunchLongitude", float, "°"),
-    "wind_speed_average": DeclarativeKey(
-        "setWindSpeedAverage", "getWindSpeedAverage", float, "m/s"
-    ),
-    "wind_direction": DeclarativeKey("setWindDirection", "getWindDirection", float, "rad"),
-}
+# set keys in this order get the verified round-trip semantics. Read-only:
+# the whitelist changes by release, never at runtime.
+DECLARATIVE_KEYS: MappingProxyType[str, DeclarativeKey] = MappingProxyType(
+    {
+        "launch_rod_length": DeclarativeKey("setLaunchRodLength", "getLaunchRodLength", float, "m"),
+        "launch_rod_angle": DeclarativeKey("setLaunchRodAngle", "getLaunchRodAngle", float, "rad"),
+        "launch_into_wind": DeclarativeKey("setLaunchIntoWind", "getLaunchIntoWind", bool, ""),
+        "launch_rod_direction": DeclarativeKey(
+            "setLaunchRodDirection", "getLaunchRodDirection", float, "rad"
+        ),
+        "launch_altitude": DeclarativeKey("setLaunchAltitude", "getLaunchAltitude", float, "m"),
+        "launch_latitude": DeclarativeKey("setLaunchLatitude", "getLaunchLatitude", float, "°"),
+        "launch_longitude": DeclarativeKey("setLaunchLongitude", "getLaunchLongitude", float, "°"),
+        "wind_speed_average": DeclarativeKey(
+            "setWindSpeedAverage", "getWindSpeedAverage", float, "m/s"
+        ),
+        "wind_direction": DeclarativeKey("setWindDirection", "getWindDirection", float, "rad"),
+    }
+)

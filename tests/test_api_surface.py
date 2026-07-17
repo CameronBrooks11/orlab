@@ -45,27 +45,46 @@ def test_jars_surface_stable():
 
 
 def test_parallel_surface_stable():
+    """The whole verified contract is frozen — names, setters, getters,
+    kinds, units, and the into-wind-before-rod-direction apply order."""
     import orlab.parallel
+    from orlab.parallel import DECLARATIVE_KEYS, DeclarativeKey
 
     assert sorted(orlab.parallel.__all__) == ["DECLARATIVE_KEYS", "DeclarativeKey"]
-    assert sorted(orlab.parallel.DECLARATIVE_KEYS) == [
-        "launch_altitude",
-        "launch_into_wind",
-        "launch_latitude",
-        "launch_longitude",
-        "launch_rod_angle",
-        "launch_rod_direction",
-        "launch_rod_length",
-        "wind_direction",
-        "wind_speed_average",
-    ]
-    # launch_into_wind must precede launch_rod_direction in declaration
-    # order: appliers that iterate the mapping get round-trip semantics
-    keys = list(orlab.parallel.DECLARATIVE_KEYS)
+    expected = {
+        "launch_rod_length": DeclarativeKey("setLaunchRodLength", "getLaunchRodLength", float, "m"),
+        "launch_rod_angle": DeclarativeKey("setLaunchRodAngle", "getLaunchRodAngle", float, "rad"),
+        "launch_into_wind": DeclarativeKey("setLaunchIntoWind", "getLaunchIntoWind", bool, ""),
+        "launch_rod_direction": DeclarativeKey(
+            "setLaunchRodDirection", "getLaunchRodDirection", float, "rad"
+        ),
+        "launch_altitude": DeclarativeKey("setLaunchAltitude", "getLaunchAltitude", float, "m"),
+        "launch_latitude": DeclarativeKey("setLaunchLatitude", "getLaunchLatitude", float, "°"),
+        "launch_longitude": DeclarativeKey("setLaunchLongitude", "getLaunchLongitude", float, "°"),
+        "wind_speed_average": DeclarativeKey(
+            "setWindSpeedAverage", "getWindSpeedAverage", float, "m/s"
+        ),
+        "wind_direction": DeclarativeKey("setWindDirection", "getWindDirection", float, "rad"),
+    }
+    assert dict(DECLARATIVE_KEYS) == expected
+    keys = list(DECLARATIVE_KEYS)
     assert keys.index("launch_into_wind") < keys.index("launch_rod_direction")
-    for spec in orlab.parallel.DECLARATIVE_KEYS.values():
-        assert spec.setter.startswith("set") and spec.getter.startswith("get")
-        assert spec.kind in (float, bool)
+
+
+def test_declarative_case_values_match_contract():
+    """The integration case must exercise exactly the whitelist — a key
+    added to either side without the other is a unit-suite failure, not a
+    surprise a month later on the canary."""
+    import importlib.util
+    from pathlib import Path
+
+    from orlab.parallel import DECLARATIVE_KEYS
+
+    case = Path(__file__).parent / "integration" / "cases" / "declarative_keys.py"
+    spec = importlib.util.spec_from_file_location("declarative_keys_case", case)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert set(module.VALUES) == set(DECLARATIVE_KEYS)
 
 
 def test_enums_are_coherent():

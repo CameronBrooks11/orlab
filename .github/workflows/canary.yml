@@ -44,7 +44,10 @@ jobs:
             "https://github.com/openrocket/openrocket/releases/download/$TAG/OpenRocket-$VERSION.jar"
 
       - name: Run it against current profiles
-        # no token in this step's env: it executes the downloaded jar
+        # no token in this step's env: it executes the downloaded jar.
+        # bash -> pipefail, so a case failing after its RESULT line still
+        # fails the step despite the tee
+        shell: bash
         run: |
           uv sync
           uv run python tests/integration/cases/happy.py "OpenRocket-$VERSION.jar" | tee canary.out
@@ -87,6 +90,7 @@ jobs:
               got = result["readback"][key]
               assert abs(got - applied) < 1e-9 if isinstance(applied, float) else got == applied, (key, applied, got)
           assert result["readback"]["random_seed"] == 123456789, result
+          assert result["apogee"] > 10, result
           print("CANARY declarative OK")
           EOF
 

@@ -1,7 +1,8 @@
 # API reference
 
 The public surface is the nine names importable from `orlab`, plus the
-exception types in `orlab.errors` and the jar utilities in `orlab.jars`.
+exception types in `orlab.errors`, the jar utilities in `orlab.jars`, and
+the declarative simulation-options contract in `orlab.parallel`.
 Everything else is internal.
 
 ## OpenRocketInstance
@@ -53,6 +54,10 @@ Everything else is internal.
 `FlightDataType` and `FlightEvent` are generated as the union of constants
 across all supported OpenRocket versions; availability on the loaded version
 is enforced at translation time with `UnsupportedFlightDataType`.
+
+## Declarative simulation options
+
+::: orlab.parallel
 
 ## Errors
 

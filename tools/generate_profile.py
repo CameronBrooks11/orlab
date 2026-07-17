@@ -76,7 +76,8 @@ def verify_manifest(instance, startup):
     def require_class(root, dotted, member_check=None, member_label=None):
         jcls = _get_class(root, dotted)
         if jcls is None:
-            missing.append(dotted)
+            if dotted not in missing:
+                missing.append(dotted)
         elif member_check is not None and not member_check(jcls):
             missing.append(member_label)
         return jcls
