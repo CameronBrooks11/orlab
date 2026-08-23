@@ -20,8 +20,8 @@ The same thing in Python:
 ```python
 import orlab
 
-jar = orlab.fetch_jar()          # -> Path to the verified, cached jar
-jar = orlab.fetch_jar("22.02")   # any pinned version
+jar = orlab.fetch_jar()  # -> Path to the verified, cached jar
+jar = orlab.fetch_jar("22.02")  # any pinned version
 ```
 
 Fetching is always explicit. `OpenRocketInstance` itself never touches the

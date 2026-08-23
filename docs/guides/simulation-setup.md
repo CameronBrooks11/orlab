@@ -5,10 +5,10 @@
 `Helper.set_motor` changes the motor a simulation **actually flies**:
 
 ```python
-orl.set_motor(sim, "C6", manufacturer="Estes")   # from OpenRocket's database
-orl.set_motor(sim, "my_motor.eng")               # from a thrust-curve file
+orl.set_motor(sim, "C6", manufacturer="Estes")  # from OpenRocket's database
+orl.set_motor(sim, "my_motor.eng")  # from a thrust-curve file
 orl.set_motor(sim, "C6", manufacturer="Estes", delay=5.0)  # + ejection delay (s)
-print(orl.get_motor(sim))                        # designation at the sim's config
+print(orl.get_motor(sim))  # designation at the sim's config
 ```
 
 ### Why this exists: the silent-failure trap
@@ -64,13 +64,13 @@ on live Java objects, and the verified names live in
 
 ```python
 opts = sim.getOptions()
-opts.setLaunchRodLength(1.5)        # m
-opts.setLaunchRodAngle(0.15)        # rad
-opts.setLaunchIntoWind(False)       # required for setLaunchRodDirection to act
-opts.setLaunchRodDirection(1.2)     # rad — silently ignored while into-wind is on
-opts.setLaunchAltitude(1400.0)      # m
-opts.setWindSpeedAverage(6.5)       # m/s
-opts.setWindDirection(2.1)          # rad
+opts.setLaunchRodLength(1.5)  # m
+opts.setLaunchRodAngle(0.15)  # rad
+opts.setLaunchIntoWind(False)  # required for setLaunchRodDirection to act
+opts.setLaunchRodDirection(1.2)  # rad — silently ignored while into-wind is on
+opts.setLaunchAltitude(1400.0)  # m
+opts.setWindSpeedAverage(6.5)  # m/s
+opts.setWindDirection(2.1)  # rad
 ```
 
 Component tweaks are the same story — find the component, call its setter:
@@ -78,7 +78,7 @@ Component tweaks are the same story — find the component, call its setter:
 ```python
 nose = orl.get_component_named(sim.getRocket(), "Nose cone")
 nose.setMassOverridden(True)
-nose.setOverrideMass(0.035)         # kg
+nose.setOverrideMass(0.035)  # kg
 ```
 
 All values are SI (meters, radians, kilograms, Kelvin); OpenRocket's
@@ -102,9 +102,9 @@ wind model *including its turbulence*:
 from orlab.listeners import WindProfile
 
 profile = WindProfile(
-    altitudes_m=[0.0, 20.0, 20.001, 100.0],   # epsilon step = sharp layer
+    altitudes_m=[0.0, 20.0, 20.001, 100.0],  # epsilon step = sharp layer
     speeds_ms=[5.0, 5.0, 20.0, 20.0],
-    directions_rad=0.0,                        # wind FROM north, like setWindDirection
+    directions_rad=0.0,  # wind FROM north, like setWindDirection
 )
 orl.run_simulation(sim, listeners=[profile])
 ```
@@ -130,7 +130,7 @@ WindModelType = orl.openrocket.models.wind.WindModelType
 opts.setWindModelType(WindModelType.MULTI_LEVEL)
 model = opts.getMultiLevelWindModel()
 model.clearLevels()
-model.addWindLevel(0.0, 5.0, 0.0, 0.05)      # altitude, speed, direction, std dev
+model.addWindLevel(0.0, 5.0, 0.0, 0.05)  # altitude, speed, direction, std dev
 model.addWindLevel(100.0, 12.0, 0.3, 0.1)
 # model.importLevelsFromCSV(java.io.File) reads a whole sounding at once
 ```

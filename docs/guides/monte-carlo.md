@@ -180,7 +180,7 @@ import orlab
 import pandas as pd
 
 if __name__ == "__main__":
-    jar = orlab.fetch_jar()                       # verified download, cached
+    jar = orlab.fetch_jar()  # verified download, cached
     pool = orlab.SimulationPool("rocket.ork", jar, jvm_args=("-Xmx512m",))
     study = pool.run([{"wind_speed_average": w / 4} for w in range(100)], seed=1)
     table = pd.DataFrame(study.to_records())

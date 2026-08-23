@@ -31,13 +31,14 @@ processes and serialize without surprises.
 ```python
 summaries = []
 for i in range(100):
-    randomize(sim)          # your parameter dispersion
+    randomize(sim)  # your parameter dispersion
     orl.run_simulation(sim)
     summaries.append(orl.get_summary(sim))
 
 rows = [s.to_dict() for s in summaries]
 
 import pandas as pd  # optional — plain dicts work with csv.DictWriter too
+
 table = pd.DataFrame(rows)
 print(table[["apogee", "landing_distance", "landing_bearing_deg"]].describe())
 ```
@@ -53,8 +54,8 @@ call. `export_csv` is stdlib-only; `get_dataframe` needs the
 orlab works without pandas):
 
 ```python
-orl.export_csv(sim, "flight.csv")   # UTF-8, "NAME (SI unit)" headers
-frame = orl.get_dataframe(sim)      # same columns as a pandas DataFrame
+orl.export_csv(sim, "flight.csv")  # UTF-8, "NAME (SI unit)" headers
+frame = orl.get_dataframe(sim)  # same columns as a pandas DataFrame
 print(frame[["TYPE_TIME (s)", "TYPE_ALTITUDE (m)"]].tail())
 ```
 
