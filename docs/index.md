@@ -50,5 +50,5 @@ newest upstream release.
   [working across OpenRocket versions](guides/multi-version.md)
 - [API reference](api.md) — the full public surface, generated from the
   docstrings
-- [Examples on GitHub](https://github.com/CameronBrooks11/orlab/tree/main/examples/simple_ork)
+- [Examples on GitHub](https://github.com/heibench/orlab/tree/main/examples/simple_ork)
   — plots, a monte-carlo dispersion study, and design optimization

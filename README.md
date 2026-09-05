@@ -35,14 +35,14 @@ for dispersion studies:
 - `orl.set_motor(sim, "C6", manufacturer="Estes")` — swap the motor the
   simulation actually flies, from the motor database or a `.eng` file.
 
-The [guides](https://cameronbrooks11.github.io/orlab/) cover each.
+The [guides](https://heibench.github.io/orlab/) cover each.
 
 Where orhelper targets a single OpenRocket version, orlab detects the jar's
 version before the JVM starts and adapts to it — package roots, startup path,
 and available flight-data constants all come from checked-in, generated
 version profiles.
 
-**Documentation: <https://cameronbrooks11.github.io/orlab/>** — getting
+**Documentation: <https://heibench.github.io/orlab/>** — getting
 started, API reference, and maintainer procedures.
 
 ## Supported OpenRocket versions
@@ -94,7 +94,7 @@ e.g. `orl.get_timeseries(sim, ["TYPE_SOME_NEW_TYPE"])`.
    The full resolution order is `ORLAB_JAR`, the legacy `CLASSPATH`, the
    newest supported `OpenRocket-*.jar` in the current directory, then the
    cache; `python -m orlab which` shows what would be used. See
-   [Getting an OpenRocket jar](https://cameronbrooks11.github.io/orlab/guides/jars/)
+   [Getting an OpenRocket jar](https://heibench.github.io/orlab/guides/jars/)
    for details.
 
 ## Usage
@@ -147,7 +147,7 @@ The toolchain is [uv](https://docs.astral.sh/uv/) +
 [AGENTS.md](AGENTS.md).
 
 ```
-git clone https://github.com/CameronBrooks11/orlab.git
+git clone https://github.com/heibench/orlab.git
 cd orlab
 just setup     # uv sync
 just check     # format check + lint + mypy

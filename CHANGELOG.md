@@ -147,7 +147,7 @@ reconstructed from the git log.
   and working across OpenRocket versions (profiles, fallback, the
   `TYPE_PROPELLANT_MASS`→`TYPE_MOTOR_MASS` rename, string escape hatch).
   Every code block executed against a real jar.
-- Documentation site at <https://cameronbrooks11.github.io/orlab/>
+- Documentation site at <https://heibench.github.io/orlab/>
   (mkdocs-material + mkdocstrings API reference, deployed from main by CI);
   `just docs` builds it locally. The maintainer release notes moved there
   from `docs/pypi_usage.md`.

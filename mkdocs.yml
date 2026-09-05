@@ -1,8 +1,8 @@
 site_name: orlab
 site_description: Script OpenRocket from Python — simulations, listeners, and flight data via JPype
-site_url: https://cameronbrooks11.github.io/orlab/
-repo_url: https://github.com/CameronBrooks11/orlab
-repo_name: CameronBrooks11/orlab
+site_url: https://heibench.github.io/orlab/
+repo_url: https://github.com/heibench/orlab
+repo_name: heibench/orlab
 
 theme:
   name: material
