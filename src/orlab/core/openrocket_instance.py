@@ -126,20 +126,14 @@ class OpenRocketInstance:
     OpenRocket's log level is process-global: the most recently entered
     instance's log_level wins.
 
-    Attributes worth branching on:
-
-    ``or_version``
-        The jar's version string, as read from its ``build.properties``.
-    ``profile``
-        The version profile in use — which may not be the jar's own.
-    ``profile_exact``
-        ``True`` when a profile for this exact version is checked in;
-        ``False`` when orlab fell back to the nearest older profile because
-        it does not know this release. On a fallback, newer constants may be
-        missing from orlab's enums, so results are produced against older
-        facts. A warning is also logged, but a log line is not something a
-        caller can act on — check this flag if correctness on unknown
-        versions matters to you (#61).
+    :ivar or_version: The jar's version string, from its ``build.properties``.
+    :ivar profile: The version profile in use — which may not be the jar's own.
+    :ivar profile_exact: ``True`` when a profile for this exact version is
+        checked in; ``False`` when orlab fell back to the nearest older profile
+        because it does not know this release, in which case newer constants
+        may be missing from orlab's enums. A warning is logged too, but a log
+        line is not something a caller can act on — branch on this flag if
+        correctness on unknown versions matters to you.
     """
 
     # Deprecated: pass jvm_path to __init__ instead. Honored (with a warning)

@@ -141,10 +141,6 @@ def test_instance_warns_on_fallback_profile(tmp_path, caplog):
     ("version", "expected_profile", "expected_exact"),
     [
         ("24.12", (24, 12), True),
-        # An RC of a version we DO profile is an exact match, even though its
-        # version string differs from the profile's — which is why a caller
-        # cannot reconstruct this by comparing or_version to
-        # profile.version_string.
         ("24.12.RC.01", (24, 12), True),
         ("26.xx-SNAPSHOT", (24, 12), False),
     ],
@@ -161,6 +157,18 @@ def test_instance_exposes_whether_the_profile_is_exact(
     instance = OpenRocketInstance(jar_path=_fake_jar(tmp_path, version))
     assert instance.profile.version == expected_profile
     assert instance.profile_exact is expected_exact
+
+
+def test_string_comparison_is_not_a_substitute_for_profile_exact(tmp_path):
+    """An RC of a profiled version is an EXACT match whose strings differ.
+
+    This pins the trap the flag exists to close: reconstructing it as
+    ``or_version != profile.version_string`` reports a fallback here, and is
+    wrong on every RC and point release.
+    """
+    instance = OpenRocketInstance(jar_path=_fake_jar(tmp_path, "24.12.RC.01"))
+    assert instance.profile_exact is True
+    assert instance.or_version != instance.profile.version_string
 
 
 def test_profile_exact_survives_a_silenced_logger(tmp_path, caplog):

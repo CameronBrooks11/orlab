@@ -16,9 +16,10 @@ reconstructed from the git log.
   raises its log level silences entirely — leaving nothing on the object to
   branch on. Comparing `or_version` to `profile.version_string` is not a
   substitute: `24.12.RC.01` is an exact match whose strings differ, so that
-  reconstruction reports a fallback that is not one ([#61]).
-
-[#61]: https://github.com/heibench/orlab/issues/61
+  reconstruction reports a fallback that is not one (#61).
+- `SimulationPool.profile_exact`: the same verdict on the pool, which builds
+  an instance to validate the jar and previously discarded it. A pool running
+  on stale enums is the case where it matters most (#61).
 
 ## [0.9.0] — 2026-07-17
 

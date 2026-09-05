@@ -34,8 +34,8 @@ One PR:
 4. `just test && just test-integration`.
 
 Until that PR lands, the new release runs on the nearest older profile with
-a warning (the monthly `canary.yml` run checks exactly this and opens an
-issue on failure).
+a warning, and `OpenRocketInstance.profile_exact` is `False` (the monthly
+`canary.yml` run checks exactly this and opens an issue on failure).
 
 ## Test tiers
 

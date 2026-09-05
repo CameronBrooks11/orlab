@@ -327,8 +327,12 @@ class SimulationPool:
             else os.path.abspath(_default_jar_path())
         )
         # validates the jar and fires the fallback-profile warning once,
-        # in the parent, instead of once per worker
-        OpenRocketInstance(jar, log_level=log_level, jvm_path=jvm_path, jvm_args=tuple(jvm_args))
+        # in the parent, instead of once per worker. The instance is discarded
+        # but its verdict is not: a pool running on stale enums is exactly the
+        # case a caller needs to branch on, and a log line is not branchable.
+        self.profile_exact = OpenRocketInstance(
+            jar, log_level=log_level, jvm_path=jvm_path, jvm_args=tuple(jvm_args)
+        ).profile_exact
         count = _count_simulations(ork)
         if count is not None and not 0 <= simulation_index < max(count, 1):
             raise IndexError(
