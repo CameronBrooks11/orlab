@@ -33,9 +33,10 @@ One PR:
    `_pins.py` also rolls the CI jar caches).
 4. `just test && just test-integration`.
 
-Until that PR lands, the new release runs on the nearest older profile with
-a warning, and `OpenRocketInstance.profile_exact` is `False` (the monthly
-`canary.yml` run checks exactly this and opens an issue on failure).
+Until that PR lands, the new release runs on the nearest older profile
+(the monthly `canary.yml` run exercises exactly this path against the newest
+upstream release and opens an issue on failure). `OpenRocketInstance.profile_exact`
+is `False` throughout — the canary does not assert the flag, it runs on it.
 
 ## Test tiers
 
