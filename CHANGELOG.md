@@ -7,6 +7,19 @@ reconstructed from the git log.
 
 ## [Unreleased]
 
+### Added
+
+- `OpenRocketInstance.profile_exact`: `True` when a profile for the jar's
+  exact version is checked in, `False` when orlab fell back to the nearest
+  older profile because it does not know that release. The fallback was
+  previously reported only through a log warning, which an application that
+  raises its log level silences entirely — leaving nothing on the object to
+  branch on. Comparing `or_version` to `profile.version_string` is not a
+  substitute: `24.12.RC.01` is an exact match whose strings differ, so that
+  reconstruction reports a fallback that is not one ([#61]).
+
+[#61]: https://github.com/heibench/orlab/issues/61
+
 ## [0.9.0] — 2026-07-17
 
 ### Added
