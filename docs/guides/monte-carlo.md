@@ -166,7 +166,7 @@ with orlab.OpenRocketInstance() as instance:
 
 `run_simulation` randomizes the seed on every call by default — that is
 what makes this loop sample rather than repeat one flight. The complete
-version — [`examples/simple_ork/monte_carlo.py`](https://github.com/CameronBrooks11/orlab/blob/main/examples/simple_ork/monte_carlo.py)
+version — [`examples/simple_ork/monte_carlo.py`](https://github.com/heibench/orlab/blob/main/examples/simple_ork/monte_carlo.py)
 — also perturbs component masses, air-starts the rocket with a listener,
 and reports the dispersion via `get_summary` (note the circular mean for
 bearings — angles don't average like scalars).

@@ -43,7 +43,7 @@ table = pd.DataFrame(rows)
 print(table[["apogee", "landing_distance", "landing_bearing_deg"]].describe())
 ```
 
-[`examples/simple_ork/monte_carlo.py`](https://github.com/CameronBrooks11/orlab/blob/main/examples/simple_ork/monte_carlo.py)
+[`examples/simple_ork/monte_carlo.py`](https://github.com/heibench/orlab/blob/main/examples/simple_ork/monte_carlo.py)
 is this pattern end to end.
 
 ## Timeseries tables

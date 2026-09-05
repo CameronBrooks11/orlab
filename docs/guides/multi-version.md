@@ -53,7 +53,7 @@ A jar older than 15.03 raises `UnsupportedOpenRocketVersion`.
 One process drives one jar (the JVM cannot be restarted), so comparisons are
 subprocess-per-version. orlab's own integration harness is the reference
 implementation:
-[`tests/integration/`](https://github.com/CameronBrooks11/orlab/tree/main/tests/integration)
+[`tests/integration/`](https://github.com/heibench/orlab/tree/main/tests/integration)
 spawns a fresh Python per version and asserts, among other things, that the
 same rocket's apogee agrees across all four supported versions within 5 %.
 

@@ -23,8 +23,8 @@ pandas = ["pandas>=2.0"]
 all = ["orlab[pandas]"]
 
 [project.urls]
-Repository = "https://github.com/CameronBrooks11/orlab"
-Issues = "https://github.com/CameronBrooks11/orlab/issues"
+Repository = "https://github.com/heibench/orlab"
+Issues = "https://github.com/heibench/orlab/issues"
 
 [dependency-groups]
 dev = ["pytest>=8", "ruff>=0.11", "mypy>=1.10"]

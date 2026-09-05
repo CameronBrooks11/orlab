@@ -1,7 +1,7 @@
 # Maintainer notes
 
 Working agreements live in
-[AGENTS.md](https://github.com/CameronBrooks11/orlab/blob/main/AGENTS.md);
+[AGENTS.md](https://github.com/heibench/orlab/blob/main/AGENTS.md);
 this page holds the procedures.
 
 ## Releasing
