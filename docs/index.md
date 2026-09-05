@@ -29,7 +29,7 @@ with orlab.OpenRocketInstance(jar_path="OpenRocket-24.12.jar") as instance:
 | 23.09 | CI-tested (JDK 17, 21) |
 | 22.02 | CI-tested (JDK 17, 21) |
 | 15.03 | CI-tested (JDK 17, 21) |
-| newer releases | forward fallback: run day-one on the nearest older profile, with a warning |
+| newer releases | forward fallback: run day-one on the nearest older profile; `profile_exact` says so |
 
 orlab detects the jar's version before the JVM starts and adapts to it —
 package roots, startup path, and available flight-data constants all come

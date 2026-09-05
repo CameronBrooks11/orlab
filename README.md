@@ -53,7 +53,7 @@ started, API reference, and maintainer procedures.
 | 23.09 | CI-tested (JDK 17, 21) | |
 | 22.02 | CI-tested (JDK 17, 21) | |
 | 15.03 | CI-tested (JDK 17, 21) | |
-| newer releases | forward fallback | run day-one on the nearest older profile, with a warning; full support is one profile-regeneration PR |
+| newer releases | forward fallback | run day-one on the nearest older profile (`profile_exact` is `False`); full support is one profile-regeneration PR |
 
 Every version in the table runs real simulations in CI (no display server
 needed on any of them) on every pull request and push to main, and a monthly

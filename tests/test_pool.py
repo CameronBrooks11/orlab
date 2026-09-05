@@ -39,6 +39,23 @@ def _pool(ork, jar, **kwargs):
 # --- pure validation ---
 
 
+def test_pool_exposes_whether_the_profile_is_exact(ork, tmp_path):
+    """A pool running on stale enums is exactly what a caller must branch on.
+
+    The pool builds an OpenRocketInstance to validate the jar and fire the
+    fallback warning once in the parent. That instance's verdict is the
+    pool's verdict, and a log line is not something a caller can act on (#61).
+    """
+    newer = tmp_path / "OpenRocket-26.xx-SNAPSHOT.jar"
+    with zipfile.ZipFile(newer, "w") as z:
+        z.writestr("build.properties", "build.version=26.xx-SNAPSHOT\n")
+    assert _pool(ork, newer).profile_exact is False
+
+
+def test_pool_profile_exact_is_true_on_a_profiled_jar(ork, jar):
+    assert _pool(ork, jar).profile_exact is True
+
+
 def test_heterogeneous_key_sets_rejected(ork, jar):
     pool = _pool(ork, jar)
     with pytest.raises(ValueError, match="share one key set"):

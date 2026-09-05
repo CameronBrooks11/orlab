@@ -125,6 +125,15 @@ class OpenRocketInstance:
     blocks and notebook re-runs work); a different jar raises OrlabError.
     OpenRocket's log level is process-global: the most recently entered
     instance's log_level wins.
+
+    :ivar or_version: The jar's version string, from its ``build.properties``.
+    :ivar profile: The version profile in use — which may not be the jar's own.
+    :ivar profile_exact: ``True`` when a profile for this exact version is
+        checked in; ``False`` when orlab fell back to the nearest older profile
+        because it does not know this release, in which case newer constants
+        may be missing from orlab's enums. A warning is logged too, but a log
+        line is not something a caller can act on — branch on this flag if
+        correctness on unknown versions matters to you.
     """
 
     # Deprecated: pass jvm_path to __init__ instead. Honored (with a warning)
@@ -163,14 +172,14 @@ class OpenRocketInstance:
         try:
             self.or_version = read_or_version(jar_path)
             # UnsupportedOpenRocketVersion (too-old jar) passes through untouched
-            self.profile, exact = get_profile(self.or_version)
+            self.profile, self.profile_exact = get_profile(self.or_version)
         except (zipfile.BadZipFile, KeyError, ValueError) as e:
             # covers a corrupt zip, missing build.properties/build.version,
             # and an unparseable version string
             raise NotAnOpenRocketJar(
                 f"{os.path.abspath(jar_path)} is not an OpenRocket jar ({e})"
             ) from e
-        if not exact:
+        if not self.profile_exact:
             logger.warning(
                 "No profile for OpenRocket %s; falling back to the nearest older "
                 "profile (%s). Newer constants may be missing from orlab's enums.",

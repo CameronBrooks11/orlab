@@ -137,6 +137,48 @@ def test_instance_warns_on_fallback_profile(tmp_path, caplog):
     assert any("nearest older" in r.message for r in caplog.records)
 
 
+@pytest.mark.parametrize(
+    ("version", "expected_profile", "expected_exact"),
+    [
+        ("24.12", (24, 12), True),
+        ("24.12.RC.01", (24, 12), True),
+        ("26.xx-SNAPSHOT", (24, 12), False),
+    ],
+)
+def test_instance_exposes_whether_the_profile_is_exact(
+    tmp_path, version, expected_profile, expected_exact
+):
+    """The fallback is a 'could not tell': it must reach the caller as a value.
+
+    Logging it is not enough — an application that sets the root logger above
+    WARNING silences the only signal, and there is then nothing on the object
+    to branch on (#61).
+    """
+    instance = OpenRocketInstance(jar_path=_fake_jar(tmp_path, version))
+    assert instance.profile.version == expected_profile
+    assert instance.profile_exact is expected_exact
+
+
+def test_string_comparison_is_not_a_substitute_for_profile_exact(tmp_path):
+    """An RC of a profiled version is an EXACT match whose strings differ.
+
+    This pins the trap the flag exists to close: reconstructing it as
+    ``or_version != profile.version_string`` reports a fallback here, and is
+    wrong on every RC and point release.
+    """
+    instance = OpenRocketInstance(jar_path=_fake_jar(tmp_path, "24.12.RC.01"))
+    assert instance.profile_exact is True
+    assert instance.or_version != instance.profile.version_string
+
+
+def test_profile_exact_survives_a_silenced_logger(tmp_path, caplog):
+    """The flag is readable even when the warning is suppressed entirely."""
+    with caplog.at_level(logging.CRITICAL, logger="orlab.core.openrocket_instance"):
+        instance = OpenRocketInstance(jar_path=_fake_jar(tmp_path, "26.xx-SNAPSHOT"))
+    assert not any("nearest older" in r.message for r in caplog.records)
+    assert instance.profile_exact is False
+
+
 def test_instance_rejects_too_old_jar(tmp_path):
     with pytest.raises(UnsupportedOpenRocketVersion, match="15.03"):
         OpenRocketInstance(jar_path=_fake_jar(tmp_path, "14.11"))

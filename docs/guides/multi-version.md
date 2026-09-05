@@ -42,7 +42,19 @@ a crash. On 24.12, expect `SIM_WARN` events for simulation warnings and
 ## Newer releases than orlab knows
 
 A jar newer than the newest profile runs immediately on the **nearest older
-profile**, with a warning at instantiation. At startup, orlab compares the
+profile**. `OpenRocketInstance.profile_exact` is `False` in that case, and
+`instance.profile` names the profile actually in use:
+
+```python
+instance = OpenRocketInstance(jar_path="OpenRocket-99.99.jar")
+if not instance.profile_exact:
+    print(f"running {instance.or_version} on {instance.profile.version_string} facts")
+```
+
+A warning is logged too, but branch on the flag rather than the log line — an
+application that raises its log level silences the warning, and comparing
+`or_version` to `profile.version_string` is **not** equivalent: `24.12.RC.01`
+is an exact match whose strings differ. At startup, orlab also compares the
 live jar's constants against the profile and logs any drift. Full support
 for a new release is one PR — see the
 [maintainer notes](../maintainers.md#supporting-a-new-openrocket-release).
